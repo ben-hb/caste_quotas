@@ -218,13 +218,38 @@ myplot2_gen<-rbind(mean(Plit71_SC[AC_type_noST=="GEN"], na.rm=T), mean(Plit_SC_7
 
 myplot2_sc<-rbind(mean(Plit71_SC[AC_type_noST=="SC"], na.rm=T), mean(Plit_SC_7[AC_type_noST=="SC"], na.rm=T))
 
+# I've commented this line out, as the replication materials do not include the
+# PDF versions of graphics
+
 #pdf(file="Figures/Fig_educ_change.pdf", height = 4, width=8)
+
+# Sets the margin widths on each side of the plot with paramaters c(bottom,
+# left, top, right)
+
 par(mar=c(4,4,2,2))
+
+# Sets the number of rows and columns to draw later figures
+
 par(mfrow=c(1,2))
 
+# Outputs a dotted line plot from the first row value of myplot_gen to the
+# second row value and sets appropriate title and axis labels
+
 plot(myplot_gen, type="l", lty=c(2), col="#00688B", ylab="Percentage", ylim=c(10, 70), xaxt="n", main="Non-SC population", xlab="Year", las=1)
+
+# Superimposes a red line from the first row value of myplot_sc to the second
+# row value of myplot_sc
+
 lines(myplot_sc, col="#FF1493")
+
+# Sets the x-axis year ticks 
+
 axis(1, at=c(1,2), labels=c("1971", "2001"))
+
+# Adds a legend distinguishing the dotted blue line for General constituencies
+# from the solid red line for Reserved constituencies, and specifies the sample
+# size for each
+
 legend("bottomright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep=""), paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep="")), lty=c(2,1), col=c("#00688B", "#FF1493"), cex=.8)
 
 #Adding line and text for general line
