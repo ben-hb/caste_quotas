@@ -106,16 +106,40 @@ mymatrix<-matrix(nrow=length(outcomeindex), ncol=4)
 
 # Regression for loop begins 
 
+# Iterates over each outcome variable in outcomeindex
+
 for(i in 1:length(outcomeindex)){
+  
+# Subsets devDTA to only those observations for which the outcome variable of
+# interest and the constituency type (Scheduled Caste or General) is known to
+# prepare for regressing the outcome variable on the constituency type below
+  
 devDTAer<-devDTA[complete.cases(devDTA[,outcomeindex[i]], devDTA$AC_type_noST),]
+
+# Calculates the mean of the outcome variable of interest for each of the
+# Scheduled Caste subset and the General Caste subset, respectivelty, rounded to
+# 1 decimal, and outputs the General mean into the first column and Scheduled
+# Caste mean into the second column of mymatrix
 
 mymatrix[i,c(1,2)]<-round(tapply(devDTAer[, outcomeindex[i]], devDTAer$AC_type_noST, mean, na.rm=T),1)
 
+# Regresses the outome variable of interest on the type of constituency using a
+# linear model
+
 myOLS<-lm(devDTAer[, outcomeindex[i]]~ devDTAer$AC_type_noST)
+
+# Rounds the coefficient of constituency type on the outcome variable of
+# interest to 1 decimal, and outputs into the third column of mymatrix
 
 mymatrix[i,c(3)]<-round(myOLS$coef[2],1)
 
 #SEs clustered at state level 
+
+# Calculates the p-value using state-level clustered standard errors from
+# clusterSE(), estimated separately for each outcome variable, and outputs into
+# the fourth column of mymatrix after rounding to 2 decimals. If the p-value is
+# less than 0.01, then "<0.01" is outputted instead
+
 mySE<-clusterSE(myOLS, data=devDTAer, cluster="State_no_2001_old")
 mymatrix[i,c(4)]<-ifelse(coeftest(myOLS, mySE)[2,4]<0.01, "<0.01", 	round(coeftest(myOLS, mySE)[2,4],2))
 
@@ -132,22 +156,66 @@ mymatrix[i,c(4)]<-ifelse(coeftest(myOLS, mySE)[2,4]<0.01, "<0.01", 	round(coefte
 # Regression for loop ends
 }
 
+# Renames the rows to the name of the outcome variable of interest
+
 row.names(mymatrix)<-names(devDTA[outcomeindex])
+
+# Renames the columns to the names of the statistics being generated. As the
+# model estimated was a binary explanatory linear model, the coefficient of
+# constituency type on the outcome variable of interest can similarly be
+# interpreted as the difference between the means of the two samples
+
 colnames(mymatrix)<-c("Mean general", "Mean reserved", "Difference", "P-value")
+
+# Renames the rows again, this time to more readable interpretations of the
+# outcome variables of interest. There's no reason to rename twice; the first
+# rename was presumably an intermediary step to more easily determine the order
+# of rownames
 
 row.names(mymatrix)<-c("Percentage of SCs", "Literacy rate", " Employment Rate", "Agricultural laborers", "Electricity in village", "School in village ","Medical facility in village","Comm. channel in village",
 "Literacy gap", " Employment gap", "Agricultural laborers gap",   "Electricity in village gap", "School in village gap","Medical facility in village gap","Comm. channel in village gap")
 
 library(xtable)
+
+# Outputs the regression table, aligning the names of outcome variables left and
+# the summary statistics right
+
 xtable(mymatrix, align=c("l", "r", "r", "r", "r"), caption="Difference in general and SC-reserved constituencies in 2001")
 
 ######ILLUSTRATION OF EDUC CHANGE
-###EDUCATION CHANGE
+###EDUCATION 
+
+# Instructing R to attach devDTA to the R search path so that variables within
+# devDTA can be referenced solely by the column name
+
 attach(devDTA)
 
+# Generating a length 2 vector with first row equal to the mean of the 1971
+# literacy rate for individuals who are not members of a Scheduled Caste and
+# live in a General constituency and second row equal to the mean of the
+# literacy rate under the same constraints but measured in 2001
+
 myplot_gen<-rbind(mean(Plit71_nonSC[AC_type_noST=="GEN"], na.rm=T), mean(Plit_nonSC_7[AC_type_noST=="GEN"], na.rm=T))
+
+# Generating a length 2 vector with first row equal to the mean of the 1971
+# literacy rate for individuals who are not members of a Scheduled Cast and live
+# in a Scheduled Cast quota constituency and second row equal to the mean of the
+# literacy rate under the same consteaints but measured in 2001
+
 myplot_sc<-rbind(mean(Plit71_nonSC[AC_type_noST=="SC"], na.rm=T), mean(Plit_nonSC_7[AC_type_noST=="SC"], na.rm=T))
+
+# Generating a length 2 vector with first row equal to the mean of the 1971
+# literacy rate for individuals who are members of a Scheduled Caste and live in
+# a General constituency and second row equal to the mean of the literacy rate
+# under the same constraints but measured in 2001
+
 myplot2_gen<-rbind(mean(Plit71_SC[AC_type_noST=="GEN"], na.rm=T), mean(Plit_SC_7[AC_type_noST=="GEN"], na.rm=T))
+
+# Generating a length 2 vector with first row equal to the mean of the 1971
+# literacy rate for individuals who are members of a Scheduled Caste and live in
+# a Scheduled Caste quote constituency and second row equal to the mean of the
+# literacy rate under the same constraints but measured in 2001
+
 myplot2_sc<-rbind(mean(Plit71_SC[AC_type_noST=="SC"], na.rm=T), mean(Plit_SC_7[AC_type_noST=="SC"], na.rm=T))
 
 #pdf(file="Figures/Fig_educ_change.pdf", height = 4, width=8)
