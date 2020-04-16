@@ -52,16 +52,16 @@ table(devDTA$AC_type_noST[complete.cases(devDTA$P_elecVD01)])
 # the standard errors are clustered at the district of state assembly
 # constituent levels" (p.33, 2015)
 
-clusterSE<-function(model, data, cluster){
+clusterSE <- function(model, data, cluster){
 require(sandwich, quietly = TRUE)
 require(lmtest, quietly = TRUE)
-cluster<-as.factor(as.character(data[as.numeric(row.names(model.matrix(model))),cluster]))
+cluster <- as.factor(as.character(data[as.numeric(row.names(model.matrix(model))), cluster]))
 M <- length(unique(cluster))
 N <- length(cluster)
 K <- model$rank
-dfc <- (M/(M-1))*((N-1)/(N-K))
-u.clust<-apply(estfun(model),2, function(x) tapply(x, cluster, sum))
-cl.vcov<- dfc*sandwich(model, meat=crossprod(u.clust)/N)
+dfc <- (M / (M-1)) * ((N-1) / (N-K))
+u.clust <- apply(estfun(model), 2, function(x) tapply(x, cluster, sum))
+cl.vcov<- dfc * sandwich(model, meat = crossprod(u.clust) / N)
 print(coeftest(model, cl.vcov))
 return(cl.vcov)
 }
@@ -94,7 +94,7 @@ return(cl.vcov)
 # Generating a vector of the index values of outcome variables of interest to
 # allow for iterative regression over the same explanatory variables below
 
-outcomeindex<-c(35, 60, 52, 58, 64, 68, 72, 76, 63, 53, 59, 67, 71, 75, 79)
+outcomeindex <- c(35, 60, 52, 58, 64, 68, 72, 76, 63, 53, 59, 67, 71, 75, 79)
 
 ##Values for Table 1
 ##Remove # from lines with alternative SE specification to check robustness to other SEs.
@@ -102,7 +102,7 @@ outcomeindex<-c(35, 60, 52, 58, 64, 68, 72, 76, 63, 53, 59, 67, 71, 75, 79)
 # Creating a matrix to store regression results with one row for each outcome
 # variables of interest
 
-mymatrix<-matrix(nrow=length(outcomeindex), ncol=4)
+mymatrix <- matrix(nrow = length(outcomeindex), ncol = 4)
 
 # Regression for loop begins 
 
@@ -114,25 +114,25 @@ for(i in 1:length(outcomeindex)){
 # interest and the constituency type (Scheduled Caste or General) is known to
 # prepare for regressing the outcome variable on the constituency type below
   
-devDTAer<-devDTA[complete.cases(devDTA[,outcomeindex[i]], devDTA$AC_type_noST),]
+devDTAer <- devDTA[complete.cases(devDTA[, outcomeindex[i]], devDTA$AC_type_noST), ]
 
 # Calculates the mean of the outcome variable of interest for each of the
 # Scheduled Caste subset and the General Caste subset, respectivelty, rounded to
 # 1 decimal, and outputs the General mean into the first column and Scheduled
 # Caste mean into the second column of mymatrix
 
-mymatrix[i,c(1,2)]<-round(tapply(devDTAer[, outcomeindex[i]], devDTAer$AC_type_noST, 
-                                 mean, na.rm=T),1)
+mymatrix[i, c(1,2)] <- round(tapply(devDTAer[, outcomeindex[i]], devDTAer$AC_type_noST, 
+                                 mean, na.rm = T),1)
 
 # Regresses the outome variable of interest on the type of constituency using a
 # linear model
 
-myOLS<-lm(devDTAer[, outcomeindex[i]]~ devDTAer$AC_type_noST)
+myOLS <- lm(devDTAer[, outcomeindex[i]] ~ devDTAer$AC_type_noST)
 
 # Rounds the coefficient of constituency type on the outcome variable of
 # interest to 1 decimal, and outputs into the third column of mymatrix
 
-mymatrix[i,c(3)]<-round(myOLS$coef[2],1)
+mymatrix[i, c(3)] <- round(myOLS$coef[2], 1)
 
 #SEs clustered at state level 
 
@@ -141,9 +141,9 @@ mymatrix[i,c(3)]<-round(myOLS$coef[2],1)
 # the fourth column of mymatrix after rounding to 2 decimals. If the p-value is
 # less than 0.01, then "<0.01" is outputted instead
 
-mySE<-clusterSE(myOLS, data=devDTAer, cluster="State_no_2001_old")
-mymatrix[i,c(4)]<-ifelse(coeftest(myOLS, mySE)[2,4]<0.01, "<0.01", 	
-                         round(coeftest(myOLS, mySE)[2,4],2))
+mySE <- clusterSE(myOLS, data = devDTAer, cluster = "State_no_2001_old")
+mymatrix[i, c(4)] <- ifelse(coeftest(myOLS, mySE)[2,4] < 0.01, "<0.01", 	
+                         round(coeftest(myOLS, mySE)[2, 4] ,2))
 
 #Bootstrapped SEs clustered at state level using rms
 #cluster<-devDTAer$State_no_2001_old myRMS<-ols(devDTAer[, outcomeindex[i]]~
@@ -161,25 +161,25 @@ mymatrix[i,c(4)]<-ifelse(coeftest(myOLS, mySE)[2,4]<0.01, "<0.01",
 
 # Renames the rows to the name of the outcome variable of interest
 
-row.names(mymatrix)<-names(devDTA[outcomeindex])
+row.names(mymatrix) <- names(devDTA[outcomeindex])
 
 # Renames the columns to the names of the statistics being generated. As the
 # model estimated was a binary explanatory linear model, the coefficient of
 # constituency type on the outcome variable of interest can similarly be
 # interpreted as the difference between the means of the two samples
 
-colnames(mymatrix)<-c("Mean general", "Mean reserved", "Difference", "P-value")
+colnames(mymatrix) <- c("Mean general", "Mean reserved", "Difference", "P-value")
 
 # Renames the rows again, this time to more readable interpretations of the
 # outcome variables of interest. There's no reason to rename twice; the first
 # rename was presumably an intermediary step to more easily determine the order
 # of rownames
 
-row.names(mymatrix)<-c("Percentage of SCs", "Literacy rate", " Employment Rate", 
+row.names(mymatrix) <- c("Percentage of SCs", "Literacy rate", " Employment Rate", 
                        "Agricultural laborers", "Electricity in village", 
                        "School in village ","Medical facility in village",
                        "Comm. channel in village", "Literacy gap", " Employment gap", 
-                       "Agricultural laborers gap",   "Electricity in village gap", 
+                       "Agricultural laborers gap", "Electricity in village gap", 
                        "School in village gap","Medical facility in village gap",
                        "Comm. channel in village gap")
 
@@ -188,8 +188,8 @@ library(xtable)
 # Outputs the regression table, aligning the names of outcome variables left and
 # the summary statistics right
 
-xtable(mymatrix, align=c("l", "r", "r", "r", "r"), 
-       caption="Difference in general and SC-reserved constituencies in 2001")
+xtable(mymatrix, align = c("l", "r", "r", "r", "r"), 
+       caption = "Difference in general and SC-reserved constituencies in 2001")
 
 ######ILLUSTRATION OF EDUC CHANGE
 ###EDUCATION 
@@ -204,32 +204,32 @@ attach(devDTA)
 # live in a General constituency and second row equal to the mean of the
 # literacy rate under the same constraints but measured in 2001
 
-myplot_gen<-rbind(mean(Plit71_nonSC[AC_type_noST=="GEN"], na.rm=T), 
-                  mean(Plit_nonSC_7[AC_type_noST=="GEN"], na.rm=T))
+myplot_gen <- rbind(mean(Plit71_nonSC[AC_type_noST == "GEN"], na.rm = T), 
+                  mean(Plit_nonSC_7[AC_type_noST == "GEN"], na.rm = T))
 
 # Generating a length 2 vector with first row equal to the mean of the 1971
 # literacy rate for individuals who are not members of a Scheduled Cast and live
 # in a Scheduled Cast quota constituency and second row equal to the mean of the
 # literacy rate under the same consteaints but measured in 2001
 
-myplot_sc<-rbind(mean(Plit71_nonSC[AC_type_noST=="SC"], na.rm=T), 
-                 mean(Plit_nonSC_7[AC_type_noST=="SC"], na.rm=T))
+myplot_sc <- rbind(mean(Plit71_nonSC[AC_type_noST == "SC"], na.rm = T), 
+                 mean(Plit_nonSC_7[AC_type_noST == "SC"], na.rm = T))
 
 # Generating a length 2 vector with first row equal to the mean of the 1971
 # literacy rate for individuals who are members of a Scheduled Caste and live in
 # a General constituency and second row equal to the mean of the literacy rate
 # under the same constraints but measured in 2001
 
-myplot2_gen<-rbind(mean(Plit71_SC[AC_type_noST=="GEN"], na.rm=T), 
-                   mean(Plit_SC_7[AC_type_noST=="GEN"], na.rm=T))
+myplot2_gen <- rbind(mean(Plit71_SC[AC_type_noST == "GEN"], na.rm = T), 
+                   mean(Plit_SC_7[AC_type_noST == "GEN"], na.rm = T))
 
 # Generating a length 2 vector with first row equal to the mean of the 1971
 # literacy rate for individuals who are members of a Scheduled Caste and live in
 # a Scheduled Caste quote constituency and second row equal to the mean of the
 # literacy rate under the same constraints but measured in 2001
 
-myplot2_sc<-rbind(mean(Plit71_SC[AC_type_noST=="SC"], na.rm=T), 
-                  mean(Plit_SC_7[AC_type_noST=="SC"], na.rm=T))
+myplot2_sc <- rbind(mean(Plit71_SC[AC_type_noST == "SC"], na.rm = T), 
+                  mean(Plit_SC_7[AC_type_noST == "SC"], na.rm = T))
 
 # I've commented this line out, as the replication materials do not include the
 # PDF versions of graphics
@@ -239,11 +239,11 @@ myplot2_sc<-rbind(mean(Plit71_SC[AC_type_noST=="SC"], na.rm=T),
 # Sets the margin widths on each side of the plot with paramaters c(bottom,
 # left, top, right)
 
-par(mar=c(4,4,2,2))
+par(mar = c(4, 4, 2, 2))
 
 # Sets the number of rows and columns to draw later figures
 
-par(mfrow=c(1,2))
+par(mfrow = c(1, 2))
 
 # Outputs a dotted line plot from the first row value of myplot_gen to the
 # second row value and sets appropriate title and axis labels
@@ -251,63 +251,70 @@ par(mfrow=c(1,2))
 # This section plots the change in literacy rates for both General and Scheduled
 # Caste Constitutiences for members of non-Scheduled Caste communities
 
-plot(myplot_gen, type="l", lty=c(2), col="#00688B", ylab="Percentage", ylim=c(10, 70), 
-     xaxt="n", main="Non-SC population", xlab="Year", las=1)
+plot(myplot_gen, type = "l", lty = c(2), col = "#00688B", ylab = "Percentage", 
+     ylim = c(10, 70), 
+     xaxt = "n", main = "Non-SC population", xlab = "Year", las = 1)
 
 # Superimposes a red line from the first row value of myplot_sc to the second
 # row value of myplot_sc
 
-lines(myplot_sc, col="#FF1493")
+lines(myplot_sc, col = "#FF1493")
 
 # Sets the x-axis year ticks 
 
-axis(1, at=c(1,2), labels=c("1971", "2001"))
+axis(1, at = c(1, 2), labels = c("1971", "2001"))
 
 # Adds a legend distinguishing the dotted blue line for General constituencies
 # from the solid red line for Reserved constituencies, and specifies the sample
 # size for each
 
-legend("bottomright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep=""), 
-                        paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep="")), 
-       lty=c(2,1), col=c("#00688B", "#FF1493"), cex=.8)
+legend("bottomright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", 
+                              sep = ""), 
+                        paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", 
+                              sep = "")), 
+       lty = c(2, 1), col = c("#00688B", "#FF1493"), cex = .8)
 
 #Adding line and text for general line
 
 # Adding line showing what the trend would look like if the literacy rate for
 # General Constituencies in 1971 were the same as in 2001
 
-abline(h=myplot_gen[2], lty=3, col="#00688B")
+abline(h = myplot_gen[2], lty = 3, col = "#00688B")
 
 # Adding arrow to visualize the difference between the 1971 and 2001 literacy
 # levels for General Constituencies
 
-arrows(x0=1.02, y0=myplot_gen[1]+2, x1=1.02, y1=myplot_gen[2]-2, code=3, length=.05)
+arrows(x0 = 1.02, y0 = myplot_gen[1] + 2, x1 = 1.02, y1 = myplot_gen[2] - 2, code = 3, 
+       length = .05)
 
 # Adding text to describe the change in literacy rates over time in General
 # Constituencies
 
-text(x=1.02, y=myplot_gen[2]-9,  labels=paste("Change\ngeneral:\n", 
-                                              round(myplot_gen[2]-myplot_gen[1],2), sep=""), 
-     pos=4, cex=0.8, col = "black")
+text(x = 1.02, y = myplot_gen[2] - 9, labels = paste("Change\ngeneral:\n", 
+                                              round(myplot_gen[2] - myplot_gen[1], 2), 
+                                              sep = ""), 
+     pos = 4, cex = 0.8, col = "black")
 
 #Adding line and text for reserved line
 
 # Adding line showing what the trend would look like if the literacy rate for
 # Reserved Constituencies in 1971 were the same as in 2001
 
-abline(h=myplot_sc[1], lty=3, col="#FF1493")
+abline(h = myplot_sc[1], lty = 3 , col = "#FF1493")
 
 # Adding arrow to visualize the difference between the 1971 and 2001 literacy
 # levels for Reserved Constituencies
 
-arrows(x0=1.98, y0=myplot_sc[1]+2, x1=1.98, y1=myplot_sc[2]-2, code=3, length=.05)
+arrows(x0 = 1.98, y0 = myplot_sc[1] + 2, x1 = 1.98, y1 = myplot_sc[2] - 2, code = 3, 
+       length = .05)
 
 # Adding text to describe the change in literacy rates over time in Reserved
 # Constituencies
 
-text(x=1.98, y=myplot_sc[1]+5,  labels=paste("Change\nreserved:\n", 
-                                             round(myplot_sc[2]-myplot_sc[1],2), sep=""), 
-     pos=2, cex=0.8, col = "black")
+text(x = 1.98, y = myplot_sc[1] + 5,  labels = paste("Change\nreserved:\n", 
+                                             round(myplot_sc[2] - myplot_sc[1],2), 
+                                             sep = ""), 
+     pos = 2, cex = 0.8, col = "black")
 
 # Outputs a dotted line plot from the first row value of myplot2_gen to the
 # second row value and sets appropriate title and axis labels
@@ -315,55 +322,56 @@ text(x=1.98, y=myplot_sc[1]+5,  labels=paste("Change\nreserved:\n",
 # This section plots the change in literacy rates for both General and Reserved
 # Constitutiences for members of Scheduled Caste communities
 
-plot(myplot2_gen, type="l", lty=c(2), col="#00688B", ylab="Percentage", 
-     ylim=c(10, 70), xaxt="n", main="SC population", xlab="Year", las=1)
+plot(myplot2_gen, type = "l", lty = c(2), col = "#00688B", ylab = "Percentage", 
+     ylim = c(10, 70), xaxt = "n", main = "SC population", xlab = "Year", las = 1)
 
 # Superimposes a red line from the first row value of myplot_sc to the second
 # row value of myplot2_sc
 
-lines(myplot2_sc, col="#FF1493")
+lines(myplot2_sc, col = "#FF1493")
 
 # Sets the x-axis year ticks 
 
-axis(1, at=c(1,2), labels=c("1971", "2001"))
+axis(1, at = c(1,2), labels = c("1971", "2001"))
 
 #Adding line and text for general line
 
 # Adding line showing what the trend would look like if the literacy rate for
 # General Constituencies in 1971 were the same as in 2001
 
-abline(h=myplot2_gen[2], lty=3, col="#00688B")
+abline(h = myplot2_gen[2], lty = 3, col = "#00688B")
 
 # Adding arrow to visualize the difference between the 1971 and 2001 literacy
 # levels for General Constituencies
 
-arrows(x0=1.02, y0=myplot2_gen[1]+2, x1=1.02, y1=myplot2_gen[2]-2, code=3, length=.05)
+arrows(x0 = 1.02, y0 = myplot2_gen[1] + 2 , x1 = 1.02, y1 = myplot2_gen[2] - 2, 
+       code = 3, length = .05)
 
 # Adding text to describe the change in literacy rates over time in General
 # Constituencies
 
-text(x=1.02, y=myplot2_gen[2]-9, labels=paste("Change\ngeneral:\n", 
-                                               round(myplot2_gen[2]-myplot2_gen[1],2), sep=""), 
-     pos=4, cex=0.8, col = "black")
+text(x = 1.02, y = myplot2_gen[2] - 9, labels = paste("Change\ngeneral:\n", 
+                                               round(myplot2_gen[2] - myplot2_gen[1], 2), sep = ""), 
+     pos = 4, cex = 0.8, col = "black")
 
 #Adding line and text for reserved line
 
 # Adding line showing what the trend would look like if the literacy rate for
 # Reserved Constituencies in 1971 were the same as in 2001
 
-abline(h=myplot2_sc[1], lty=3, col="#FF1493")
+abline(h = myplot2_sc[1], lty = 3, col = "#FF1493")
 
 # Adding arrow to visualize the difference between the 1971 and 2001 literacy
 # levels for Reserved Constituencies
 
-arrows(x0=1.98, y0=myplot2_sc[1]+2, x1=1.98, y1=myplot2_sc[2]-2, code=3, length=.05)
+arrows(x0 = 1.98, y0 = myplot2_sc[1] + 2, x1 = 1.98, y1 = myplot2_sc[2] - 2, code = 3, length = .05)
 
 # Adding text to describe the change in literacy rates over time in Reserved
 # Constituencies
 
-text(x=1.98, y=myplot2_sc[1]+5,  labels=paste("Change\nreserved:\n", 
-                                              round(myplot2_sc[2]-myplot2_sc[1],2)), pos=2, 
-     cex=0.8, col = "black")
+text(x = 1.98, y = myplot2_sc[1] + 5,  labels = paste("Change\nreserved:\n", 
+                                              round(myplot2_sc[2] - myplot2_sc[1], 2)), pos = 2, 
+     cex = 0.8, col = "black")
 
 # Ends plotting session, removing the plots from the R session and erasing the
 # figure settings from par()
@@ -388,14 +396,14 @@ detach()
 # Scheduled Caste literacy rate in 1971, and the Scheduled Caste literacy rate
 # in 2001
 
-matchdta<-devDTA[complete.cases(devDTA$SC_percent71_true, devDTA$State_no_2001_old, 
-                                devDTA$AC_type_noST, devDTA$Plit71_SC, devDTA$Plit_SC),] 
+matchdta <- devDTA[complete.cases(devDTA$SC_percent71_true, devDTA$State_no_2001_old, 
+                                devDTA$AC_type_noST, devDTA$Plit71_SC, devDTA$Plit_SC), ] 
 
 # I haven't yet figured out what this is doing. From what I can tell,
 # matchdta$SC_percent71_true is already a numeric value, so there's likely some
 # nuance I'm missing here
 
-matchdta$SC_percent71_true<-as.numeric(as.character(matchdta$SC_percent71_true))
+matchdta$SC_percent71_true <- as.numeric(as.character(matchdta$SC_percent71_true))
 
 # I'm also unclear why there is a second detach, as no database has been
 # attached to the R search path since the last detach() was run in the loop.
@@ -407,35 +415,94 @@ detach()
 # Attaches matchdta to the default R search path 
 
 attach(matchdta)
-dim(matchdta)
-names(matchdta)
-Tr<-ifelse(AC_type_noST=="SC", 1, 0)
 
-X<-as.data.frame(cbind(as.numeric(State_no_2001_old), as.numeric(DELIM_district_no), 
+# Returns the dimensions of matchdta. This appears to have been an intermediary
+# step to verify that matchdta has been properly constructed and is vestigial at
+# this stage
+
+dim(matchdta)
+
+# Returns the names of matchdta. Also appears to be vestigial at this stage
+
+names(matchdta)
+
+# Generates a numeric variable which returns 1 if the Assembly Constituency is a
+# Scheduled Caste Constituency and 0 otherwise
+
+Tr <- ifelse(AC_type_noST == "SC", 1, 0)
+
+# Generates a new data frame composed of the following variables from matchdta:
+# the state an assembly constituency belonged to in 2001, the number of the
+# district an Assembly Constituency was in accoring to the 1976 Delimitation
+# report, the number of the Parliamentary Constituency an Assembly Constituency
+# was part of from 1974-2000, and the percentage of Scheduled Caste individuals
+# in 1971
+
+X <- as.data.frame(cbind(as.numeric(State_no_2001_old), as.numeric(DELIM_district_no), 
                        as.numeric(PC_no_1976), SC_percent71_true))
+
+# Loading a library in a for loop isn't great practice 
 
 library(Matching)
 
-if (i==1) {
-Matched_norep<-Match(Y=Plit, Tr=Tr, X=X, estimand="ATT", exact=c(TRUE, TRUE, TRUE, FALSE), replace=FALSE)
-} else if (i==2) {
-Matched_norep<-Match(Y=Plit, Tr=Tr, X=X, estimand="ATT", exact=c(TRUE, TRUE, TRUE, FALSE), replace=FALSE, caliper=c(0,0,0,.5))
+# Only runs the first iteration of the loop
+
+if (i == 1) {
+  
+# Estimates the average treatment effect with literacy rate as the outcome
+# variable being matched on the explanatory variables in X for the treatments in
+# Tr, which does exact matching for all explanatory variables except for the
+# percentage of Scheduled Caste individuals in 1971
+  
+# This is done using a multivariate and propensity score matching estimator 
+  
+Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", exact = c(TRUE, TRUE, TRUE, FALSE), 
+                     replace = FALSE)
+
+# Only runs the second iteration of the loop
+
+} else if (i == 2) {
+  
+# Runs the same stimation as for i==1 except with specified calipers, or
+# acceptable distances for matching, to specify a tolerance of 0.5 stanard
+# deviations for the percentage of Scheduled Caste individuals in 1971
+  
+Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", exact = c(TRUE, TRUE, TRUE, FALSE), 
+                     replace = FALSE, caliper = c(0, 0, 0, .5))
 }
+
+# Outputs the results of the multivariate and propensity score matching estimate
 
 summary(Matched_norep)
 
 #####Reporting balance
-if (i==1) {
-bal_SC_norep1<-MatchBalance(Tr~SC_percent71_true, match.out=Matched_norep, nboots=1000, data=matchdta)
-} else if (i==2) {
-bal_SC_norep2<-MatchBalance(Tr~SC_percent71_true, match.out=Matched_norep, nboots=1000, data=matchdta)
+
+# Each of these evaluate whether or not the match was successful in achieving
+# balance on the observed covariates
+
+if (i == 1) {
+  
+bal_SC_norep1 <- MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep, nboots = 1000, 
+                            data = matchdta)
+
+} 
+
+else if (i == 2) {
+  
+bal_SC_norep2 <- MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep, nboots = 1000, 
+                            data = matchdta)
+
 }	
 
-bal.out_norep<-MatchBalance(Tr~Pop_tot1971+ P_ST71 +Plit71_nonSC+Plit71_SC+ P_W71_nonSC + P_W71_SC +P_al71_nonSC+P_al71_SC, match.out=Matched_norep, nboots=1000, data=matchdta)
+bal.out_norep <- MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC + 
+                                P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC, 
+                              match.out=Matched_norep, nboots=1000, data=matchdta)
 
-covariates<-as.data.frame(cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC , P_W71_SC, P_al71_nonSC, P_al71_SC))
+covariates <- as.data.frame(cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
+                                  P_W71_SC, P_al71_nonSC, P_al71_SC))
 
-names(covariates)<-c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
+names(covariates) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
+                     "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
 
 balanceTable <- function(covariates, bal.out){
 
@@ -475,7 +542,7 @@ matched1<-rbind(treatedDTA, controlDTA)
 matched2<-rbind(treatedDTA, controlDTA)		
 }
 
-# End model moatching for loop 
+# End model matching for loop 
 
 }
 
