@@ -10,23 +10,48 @@ library(exactRankTests)
 library(rms)
 
 rm(list = ls())
+
+# Dataset of development indicators for 3,134 of India’s state assembly
+# constituencies (ACs) in 1971 and 2001
+
 load("devDTA.Rdata")
+
+# Variables are described in codebook: ReadMe.rtf
 names(devDTA)
 
 #################################################################
 ############ SUMMARY STATS ######################################
 
 #Sample size including ST constituencies
+
+# Summary of reservation status from 1974-2000
+# SC: Scheduled Caste
+# ST: Scheduled Tribe
+# GEN: General Constituency
+
 table(devDTA$AC_type_1976)
 
 #Sample size Census PCA variables without ST constituencies
+
+# Same as AC_type_1976 bt excluding Scheduled Tribes, as analysis is limited to
+# comparing Scheduled Caste Constituencies and General Consituencies
+
 table(devDTA$AC_type_noST)
 
 #Sample size for Village Directory variables without ST constituencies
+
+# Subsetting AC_type_noST for assembly constituencies with data for percentage
+# of rural population living in a village with electricity
+
 table(devDTA$AC_type_noST[complete.cases(devDTA$P_elecVD01)])
 
-
 ###Creating clustered SEs
+
+# Creating a generalized function for clustering standard errors by state,
+# however Jensenius reports that "coefficients are similarly insignificant if
+# the standard errors are clustered at the district of state assembly
+# constituent levels" (p.33, 2015)
+
 clusterSE<-function(model, data, cluster){
 require(sandwich, quietly = TRUE)
 require(lmtest, quietly = TRUE)
@@ -41,6 +66,8 @@ print(coeftest(model, cl.vcov))
 return(cl.vcov)
 }
 
+# List of outcome variables of interest, where the number after the comma refers
+# to the column number of the variable, as delineated in the codebook
 
 ##Outcome variables 
 
@@ -64,11 +91,21 @@ return(cl.vcov)
 #P_medicVD01_gap, 75
 #P_commVD01_gap, 79
 
+# Generating a vector of the index values of outcome variables of interest to
+# allow for iterative regression over the same explanatory variables below
+
 outcomeindex<-c(35, 60, 52, 58, 64, 68, 72, 76, 63, 53, 59, 67, 71, 75, 79)
 
 ##Values for Table 1
 ##Remove # from lines with alternative SE specification to check robustness to other SEs.
+
+# Creating a matrix to store regression results with one row for each outcome
+# variables of interest
+
 mymatrix<-matrix(nrow=length(outcomeindex), ncol=4)
+
+# Regression for loop begins 
+
 for(i in 1:length(outcomeindex)){
 devDTAer<-devDTA[complete.cases(devDTA[,outcomeindex[i]], devDTA$AC_type_noST),]
 
@@ -91,6 +128,8 @@ mymatrix[i,c(4)]<-ifelse(coeftest(myOLS, mySE)[2,4]<0.01, "<0.01", 	round(coefte
 # SEs from permutation test	
 #mymatrix[i,c(4)]<-ifelse(perm.test(devDTAer[,outcomeindex[i]]~ devDTAer$AC_type_noST)$p.value<0.01, "<0.01", 
 #	round(perm.test(devDTAer[,outcomeindex[i]]~ devDTAer$AC_type_noST)$p.value,2))
+
+# Regression for loop ends
 }
 
 row.names(mymatrix)<-names(devDTA[outcomeindex])
