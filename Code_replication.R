@@ -752,9 +752,9 @@ mymatrix[i, 11] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)
 mymatrix[i, 12] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                           round(coeftest(mymodel, mySE)[2, 4], 2))
 
-# Naive SEs from OLS
-#mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
-#mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01", round(coef(summary.lm(mymodel))[2,4],2))
+#Naive SEs from OLS mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
+#mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
 
 # regression for loop ends
 
@@ -793,6 +793,9 @@ xtable(articlematrix)
 
 par(mar = c(4, 12, 1, .5))
 
+# Plotting coefficient differences for the matching estimate and bias-adjusted
+# estimate
+
 plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
      xlab = "Difference in percentage points in 2001 (SC-GEN)", ylab = "", cex.main = 2)
 # add the 0, vertical lines
@@ -801,6 +804,10 @@ abline(v = 0, lty = 3)
 axis(side = 1,tick = TRUE, las = 1, cex.axis = 1)
 axis(side = 2,at = c(14:1), labels = row.names(figurematrix), cex.axis = 1, las = 1, tick = F)
 #Writing in variable names
+
+# This appears to demonstrate the change in coefficients between the matching
+# estimate and bias-adjusted estimate in some form, however I'm having trouble
+# getting it to output
 
 for (i in 1:nrow(figurematrix)) {
 arrows(x0 = as.numeric(figurematrix[i, 2]), x1 = as.numeric(figurematrix[i, 3]), 
@@ -830,20 +837,60 @@ dev.off()
 #DTA$P_al_71gap
 #DTA$P_W71_gap
 
+# Outputting variables from matched2 into their own vectors for clearer
+# interpretation in the forthcoming regressions
+
+# This section explores the interaction effects with the percentage of Scheduled
+# Caste individuals in the community, with a particular intent to identify if
+# there is an interaction effect between percent SC and the type of constituency
+
 PropSC <- matched2$SC_percent71_true 
 educ_lag <- matched2$Plit71_SC
 worker_lag <- matched2$P_W71_SC 
 agr_lag <- matched2$P_al71_SC
 stateFE <- as.factor(matched2$State_no_2001_old)
 
+# In this section two distinct regression models are employed for each outcome
+# variable of interest
+
+# Model 1 regresses on the type of constituency, the proportion of Scheduled
+# Caste individuals, and the interaction effect of the two
+
+# Model 2 includes all of the explanatory variables from Model 1, in addition to
+# the baseline value of the outcome variable of interest and a state fixed
+# effect
+
+# Regressing Scheduled Caste literacy rate
+
+# Model 1 
+
 model1lm <- lm(matched2$Plit_SC_7 ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
 model3lm <- lm(matched2$Plit_SC_7 ~ educ_lag + matched2$AC_type_noST * PropSC + stateFE)
 
+# Regressing Scheduled Caste employment rate 
+
+# Model 1 
+
 model4lm <- lm(matched2$P_W_SC ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
 model6lm <- lm(matched2$P_W_SC ~ worker_lag + matched2$AC_type_noST * PropSC + stateFE)
 
+# Regressing Scheduled Caste agricultural labor share 
+
+# Model 1 
+
 model7lm <- lm(matched2$P_al_SC ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
 model9lm <- lm(matched2$P_al_SC ~ agr_lag + matched2$AC_type_noST * PropSC + stateFE)
+
+# Outputting regression results for internal check - vestigial
 
 summary(model1lm)
 summary(model3lm)
@@ -852,13 +899,16 @@ summary(model6lm)
 summary(model7lm)
 summary(model9lm)
 
-model1lm$se <-clusterSE(model1lm, data = matched2, cluster = "State_no_2001_old")
-model3lm$se <-clusterSE(model3lm, data = matched2, cluster = "State_no_2001_old")
-model4lm$se <-clusterSE(model4lm, data = matched2, cluster = "State_no_2001_old")
-model6lm$se <-clusterSE(model6lm, data = matched2, cluster = "State_no_2001_old")
-model7lm$se <-clusterSE(model7lm, data = matched2, cluster = "State_no_2001_old")
-model9lm$se <-clusterSE(model9lm, data = matched2, cluster = "State_no_2001_old")
+# Estimating standardized errors clustered at the state level
 
+model1lm$se <- clusterSE(model1lm, data = matched2, cluster = "State_no_2001_old")
+model3lm$se <- clusterSE(model3lm, data = matched2, cluster = "State_no_2001_old")
+model4lm$se <- clusterSE(model4lm, data = matched2, cluster = "State_no_2001_old")
+model6lm$se <- clusterSE(model6lm, data = matched2, cluster = "State_no_2001_old")
+model7lm$se <- clusterSE(model7lm, data = matched2, cluster = "State_no_2001_old")
+model9lm$se <- clusterSE(model9lm, data = matched2, cluster = "State_no_2001_old")
+
+# Outputting results into apsr table 
 
 library(apsrtable)
 table_OLS <- apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9lm, 
@@ -867,14 +917,27 @@ table_OLS <- apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9l
                                       "SC reserved * Percentage SC", "Literacy SC in 1971", 
                                       "Worker SC in 1971", "Agr. laborer SC in 1971"))
 
+# Printing table 
+
 #Table 4
 table_OLS
 
 
 ####Look at within constituency patterns
 
+# This section explores the possibility that there is no visible effect on net
+# development because quota-elected politicians shift resources from high
+# Scheduled Caste density areas to low density areas. It does so by attempting
+# to predict various development indicators, namely whether or not a village was
+# electrified, has a primary school, has a medical facility, and has a
+# communication channel, using an interaction model effect with type of
+# constituency and proportion of Scheduled Caste individuals
+
 #load full village dataset
 load("Vill_AC.RData")
+
+# Checking data - vestigial 
+
 dim(vill_con) 
 names(vill_con)
 
@@ -883,24 +946,43 @@ summary(vill_con$VD01_state_id)
 summary(vill_con$VD01_AC_id)
 summary(matched2$State_number_2001)
 summary(matched2$AC_no_2001)
+
+# Only using villages that correspond to Assembly Constituencies from the quota
+# dataset
+
 ##reducde to ACs that are in matched2
 vill <- merge(vill_con, matched2[, c(1:2, 28)], by.x = c("VD01_state_id", "VD01_AC_id"), 
               by.y = c("State_number_2001", "AC_no_2001"))
 
+# Vestigial check 
+
 names(vill)
 dim(vill)
+
+# Preparing variables for regression
 
 PropSC_vill <- (as.numeric(as.character(vill$VD01_sc_p)) / as.numeric(as.character(vill$VD01_t_p)))
 states <- as.factor(vill$VD01_state_id)
 
+# Regressing outcome variables of interest on the interaction of type of
+# constituency and proportion Scheduled Caste and the state fixed effects
+
+# Electricity
+
 model1glm <- glm(vill$VD01_power_supl ~ vill$AC_type_noST * PropSC_vill + 
                    as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+# Primary School
 
 model2glm <- glm(vill$VD01_educ ~ vill$AC_type_noST * PropSC_vill + 
                    as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
+# Medical Facility
+
 model3glm <- glm(vill$VD01_medic ~ vill$AC_type_noST * PropSC_vill +
                    as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+# Communication Channel
 
 model4glm <- glm(vill$VD01_comm ~ vill$AC_type_noST * PropSC_vill +
                    as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
@@ -910,6 +992,9 @@ model4glm <- glm(vill$VD01_comm ~ vill$AC_type_noST * PropSC_vill +
 #cluster<-"VD01_uniqueAC"
 #vill$VD01_district_unique<-paste(vill$VD01_state_id, "-", vill$VD01_district_id, sep="")
 #cluster<-"VD01_district_unique"
+
+# Calculating standard errors clustered at the state level 
+
 cluster <- "VD01_state_id"
 
 model1glm$se <- clusterSE(model1glm, data = vill, cluster = cluster)
@@ -917,11 +1002,15 @@ model2glm$se <- clusterSE(model2glm, data = vill, cluster = cluster)
 model3glm$se <- clusterSE(model3glm, data = vill, cluster = cluster)
 model4glm$se <- clusterSE(model4glm, data = vill, cluster = cluster)
 
+# Outputting results into apsr table 
+
 library(apsrtable)
 table_logit <- apsrtable(model1glm, model2glm, model3glm, model4glm, se = "both", 
                          stars = 1, omitcoef = c(4:19), 
                          coef.names = c("Intercept", "SC reserved", "Proportion SC", 
                                         "SC reserved * Proportion SC"))
+
+# Printing table 
 
 ##Table 5
 table_logit
