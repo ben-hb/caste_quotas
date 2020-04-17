@@ -496,9 +496,14 @@ bal_SC_norep2 <- MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep,
 
 }	
 
+# Evaluates whether or not the match was successful using a wider array of
+# covariates than before
+
 bal.out_norep <- MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC + 
                                 P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC, 
                               match.out=Matched_norep, nboots = 1000, data = matchdta)
+
+# Prepares covariates for professional output 
 
 covariates <- as.data.frame(cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
                                   P_W71_SC, P_al71_nonSC, P_al71_SC))
@@ -506,6 +511,9 @@ covariates <- as.data.frame(cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, 
 names(covariates) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
                      "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", 
                      "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
+
+# Creates a generalizable function to output evaluation of matches. This, too,
+# should likely be defined outside of the for loop
 
 balanceTable <- function(covariates, bal.out){
 
@@ -532,16 +540,25 @@ balanceTable <- function(covariates, bal.out){
 
 balanceTable(covariates, bal.out_norep)
 
+# Pepares results from each loop iteration 
+
 ##output
+
 treatedDTA <- matchdta[Matched_norep$index.treated, ]
 controlDTA <- matchdta[Matched_norep$index.control, ]
 treatedDTA$index.match <- c(1:dim(treatedDTA)[1])
 controlDTA$index.match <- c(1:dim(controlDTA)[1])
 
+# Outputs final results of each loop iteration 
+
 if(i == 1){
+  
 matched1 <- rbind(treatedDTA, controlDTA)	
+
 } else {
-matched2 <- rbind(treatedDTA, controlDTA)		
+  
+matched2 <- rbind(treatedDTA, controlDTA)	
+
 }
 
 # End model matching for loop 
@@ -558,14 +575,38 @@ detach(matchdta)
 
 ##Balance on SC percentage
 
+# Checks for balance in matching across original dataset and the matched
+# datasets from both iterations of the above loop
+
 t.test(devDTA$SC_percent71_true ~ devDTA$AC_type_noST)
 t.test(matched1$SC_percent71_true ~ matched1$AC_type_noST)
 t.test(matched2$SC_percent71_true ~ matched2$AC_type_noST)
 
 ###Figure showing balance on percentage SC
+
+#Commented out, as the pdf is not included in the replication files
+
 #pdf("Figures/Fig_SC_percent71_balance_AEJ.pdf", width=7, height=3)
+
+# Setts the dimensions for the forthcoming figures
+
 par(mai = c(0.8, 0.3, 0.3, 0.1))
 par(mfrow = c(1,3))
+
+# Plots the distribution of the percentage of Scheduled Caste members in the
+# constituency for both the General and Reserved Constituencies. The first plot
+# shows hows this looks before matching, demonstrating that Reserved
+# Constituencies tend to have a higher percentage of Scheduled Caste Community
+# members than do General Constituencies. The second plot shows how this looks
+# after matching, with the two distributions now being much closer but the
+# Reserved Constituency distribution still being slightly to the right of the
+# General Constituency distribution. The third plot shows this using matching
+# with the more precise application of caliper, with a 0.5 standard deviation
+# tolerance for matching, which now shows nearly identical distributions, though
+# with a tiny right skew still remaining for Reserved Constituencies.
+
+# First Plot: Before Matching
+
 plot(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "SC" & 
                                         complete.cases(devDTA$AC_type_noST)]), 
      col = "#FF1493", xlim = c(0,60), ylim = c(0, 0.1), main = "Before matching", 
@@ -577,6 +618,8 @@ legend("topright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", 
                      paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep = "")), 
        lty = c(2,1), col = c("#00688B", "#FF1493"))
 
+# Second Plot: After Matching
+
 plot(density(matched1$SC_percent71_true[matched1$AC_type_noST == "SC"]), col = "#FF1493", 
      xlim = c(0,60), ylim = c(0, 0.1), main = "After matching", 
      xlab = "Percentage of SCs in constituency", las = 1)
@@ -586,6 +629,8 @@ legend("topright", c(paste("General (N=", summary(matched1$AC_type_noST)[1], ")"
                      paste("Reserved (N=", summary(matched1$AC_type_noST)[2], ")", sep = "")), 
        lty = c(2,1), col = c("#00688B", "#FF1493"))
 
+# Third Plot: After Matching with Caliper
+
 plot(density(matched2$SC_percent71_true[matched2$AC_type_noST == "SC"]), col = "#FF1493", 
     xlim = c(0,60), ylim = c(0, 0.1), main = "After matching with caliper", 
     xlab = "Percentage of SCs in constituency", las = 1)
@@ -594,6 +639,9 @@ lines(density(matched2$SC_percent71_true[matched2$AC_type_noST == "GEN"]), col =
 legend("topright", c(paste("General (N=", summary(matched2$AC_type_noST)[1], ")", sep = ""), 
                      paste("Reserved (N=", summary(matched2$AC_type_noST)[2], ")", sep = "")), 
        lty = c(2,1), col = c("#00688B", "#FF1493"))
+
+# Ends plotting session and clears figure parameters set by par()
+
 dev.off()
 
 ###############################################
@@ -605,21 +653,44 @@ dev.off()
 ##Remove # from lines with alternative SE specification to check robustness to
 ##other SEs.
 
+# Generates a new matrix with row number equivalent to the number of outcome
+# variables of interest
+
 mymatrix <- matrix(nrow = length(outcomeindex), ncol = 12)
+
+# for loop to run regressions and calculate standard errors begins
+# Iterates once for each outcome variable of interest 
 
 for(i in 2:length(outcomeindex)){
 
+# Prepares both matched models for regression 
+  
 matched1_smaller <- matched1[complete.cases(matched1[outcomeindex[i]], matched1$AC_type_noST), ]
 matched2_smaller <- matched2[complete.cases(matched2[outcomeindex[i]], matched2$AC_type_noST), ]
+
+# Regresses outcome variable of interest on type of constituency
 
 mymodel <- lm(matched1_smaller[, outcomeindex[i]] ~ matched1_smaller$AC_type_noST)
 
 #SEs clustered at state level
+
+# Runs clusterSE() from earlier to calculate clustered standard errors
+
 mySE <- clusterSE(mymodel, data = matched1_smaller, cluster = "State_no_2001_old")
 
+# Outputs difference coefficient for all matches to the first column to prepare
+# for the xtable() call
+
 mymatrix[i, 1] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
 mymatrix[i, 2] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
 mymatrix[i, 3] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for all matches to the second column to prepare for the
+# xtable() call
+
 mymatrix[i, 4] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                          round(coeftest(mymodel, mySE)[2, 4], 2))
 
@@ -635,9 +706,19 @@ mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noS
 #SEs clustered at state level
 mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
+# Outputs difference coefficient for caliper matches to the third column to
+# prepare for the xtable() call
+
 mymatrix[i, 5] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
 mymatrix[i, 6] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
 mymatrix[i, 7] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for caliper matches to the fourth column to prepare for the
+# xtable() call
+
 mymatrix[i,8] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                         round(coeftest(mymodel, mySE)[2, 4], 2))
 
@@ -655,16 +736,31 @@ mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noS
 #SEs clustered at state level
 mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
+# Outputs difference coefficient for bias-adjusted matches to the fifth column
+# to prepare for the xtable() call
+
 mymatrix[i, 9] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
 mymatrix[i, 10] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
 mymatrix[i, 11] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for bias-adjusted matches to the sixth column to prepare for
+# the xtable() call
+
 mymatrix[i, 12] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                           round(coeftest(mymodel, mySE)[2, 4], 2))
 
 # Naive SEs from OLS
 #mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
 #mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01", round(coef(summary.lm(mymodel))[2,4],2))
+
+# regression for loop ends
+
 }	
+
+# Setting the row and column names to prepare for the xtable() call
 	
 row.names(mymatrix) <- names(devDTA[outcomeindex])
 colnames(mymatrix) <- c("Difference", "Conf.int min", "Conf.int max", "P-value", "Difference", 
@@ -678,13 +774,23 @@ row.names(mymatrix) <- c("Percentage SCs", "Literacy rate ", "Employment rate ",
                          "Electricity in village gap", "School in village gap",
                          "Medical facility in village gap","Comm. channel in village gap")
 
+# Subsetting matrix that will go on to make the coefficient figure below
+
 figurematrix <- mymatrix[-1, -c(1:4)]
+
+# Subsetting matrix that will be exported through xtable()
+
 articlematrix <- mymatrix[-1, c(1, 4, NA, 5, 8, NA, 9, 12)]
+
+# This looks to be third time xtable is loaded in
 
 library(xtable)
 xtable(articlematrix)
 
+# Setting margins for the forthcoming figure
+
 #pdf(file="Figures/Fig_matching_est.pdf", height=7, width =7)
+
 par(mar = c(4, 12, 1, .5))
 
 plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
