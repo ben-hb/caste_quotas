@@ -456,7 +456,8 @@ if (i == 1) {
   
 # This is done using a multivariate and propensity score matching estimator 
   
-Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", exact = c(TRUE, TRUE, TRUE, FALSE), 
+Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", 
+                       exact = c(TRUE, TRUE, TRUE, FALSE), 
                      replace = FALSE)
 
 # Only runs the second iteration of the loop
@@ -467,7 +468,8 @@ Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", exact = c(TRU
 # acceptable distances for matching, to specify a tolerance of 0.5 stanard
 # deviations for the percentage of Scheduled Caste individuals in 1971
   
-Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", exact = c(TRUE, TRUE, TRUE, FALSE), 
+Matched_norep <- Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", 
+                       exact = c(TRUE, TRUE, TRUE, FALSE), 
                      replace = FALSE, caliper = c(0, 0, 0, .5))
 }
 
@@ -496,13 +498,14 @@ bal_SC_norep2 <- MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep,
 
 bal.out_norep <- MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC + 
                                 P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC, 
-                              match.out=Matched_norep, nboots=1000, data=matchdta)
+                              match.out=Matched_norep, nboots = 1000, data = matchdta)
 
 covariates <- as.data.frame(cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
                                   P_W71_SC, P_al71_nonSC, P_al71_SC))
 
 names(covariates) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
-                     "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
+                     "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", 
+                     "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
 
 balanceTable <- function(covariates, bal.out){
 
@@ -510,11 +513,10 @@ balanceTable <- function(covariates, bal.out){
   cat("\\caption{Difference in means for treated and control and Balance output from matches} \n")
   cat(" \\begin{tabular}{lrrcrr} \\hline \\hline \n")
   cat("Covariate	&\\multicolumn{2}{c}{Before matching}",
-    "&&\\multicolumn{2}{c}{After matching}", "\\", "\\", "\\cline{2-3} \\cline{5-6} \n",
-    sep="")
+    "&&\\multicolumn{2}{c}{After matching}", "\\", "\\", "\\cline{2-3} \\cline{5-6} \n", sep = "")
   cat("& \\emph{t p}-value &KS \\emph{p}-value &&",
-    "\\emph{t p}-value &KS \\emph{p}-value", "\\", "\\", "\n",
-    sep="")
+    "\\emph{t p}-value &KS \\emph{p}-value", "\\", "\\", "\n", sep = "")
+  
   z <- sapply(1:dim(covariates)[2], function(x){
     cat(names(covariates)[x], "&",
     round(bal.out$BeforeMatching[[x]]$tt$p.value,2), "&",
@@ -523,7 +525,7 @@ balanceTable <- function(covariates, bal.out){
     round(bal.out$AfterMatching[[x]]$tt$p.value,2), "&",
     ifelse(is.null(bal.out$AfterMatching[[x]]$ks$ks.boot.pvalue) == 0,
       round(bal.out$AfterMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "\\", "\\", "\n",
-      sep="")
+      sep = "")
   })
   cat("\\end{tabular} \\end{table} \n")
   }
@@ -531,15 +533,15 @@ balanceTable <- function(covariates, bal.out){
 balanceTable(covariates, bal.out_norep)
 
 ##output
-treatedDTA<-matchdta[Matched_norep$index.treated,]
-controlDTA<-matchdta[Matched_norep$index.control,]
-treatedDTA$index.match<-c(1:dim(treatedDTA)[1])
-controlDTA$index.match<-c(1:dim(controlDTA)[1])
+treatedDTA <- matchdta[Matched_norep$index.treated, ]
+controlDTA <- matchdta[Matched_norep$index.control, ]
+treatedDTA$index.match <- c(1:dim(treatedDTA)[1])
+controlDTA$index.match <- c(1:dim(controlDTA)[1])
 
-if(i==1){
-matched1<-rbind(treatedDTA, controlDTA)	
+if(i == 1){
+matched1 <- rbind(treatedDTA, controlDTA)	
 } else {
-matched2<-rbind(treatedDTA, controlDTA)		
+matched2 <- rbind(treatedDTA, controlDTA)		
 }
 
 # End model matching for loop 
@@ -556,25 +558,42 @@ detach(matchdta)
 
 ##Balance on SC percentage
 
-t.test(devDTA$SC_percent71_true~devDTA$AC_type_noST)
-t.test(matched1$SC_percent71_true~matched1$AC_type_noST)
-t.test(matched2$SC_percent71_true~matched2$AC_type_noST)
+t.test(devDTA$SC_percent71_true ~ devDTA$AC_type_noST)
+t.test(matched1$SC_percent71_true ~ matched1$AC_type_noST)
+t.test(matched2$SC_percent71_true ~ matched2$AC_type_noST)
 
 ###Figure showing balance on percentage SC
 #pdf("Figures/Fig_SC_percent71_balance_AEJ.pdf", width=7, height=3)
 par(mai = c(0.8, 0.3, 0.3, 0.1))
-par(mfrow=c(1,3))
-plot(density(devDTA$SC_percent71_true[devDTA$AC_type_noST=="SC" & complete.cases(devDTA$AC_type_noST)]), col="#FF1493", xlim=c(0,60), ylim=c(0, 0.1), main="Before matching", xlab="Percentage of SCs in constituency", las=1)
-lines(density(devDTA$SC_percent71_true[devDTA$AC_type_noST=="GEN" & complete.cases(devDTA$AC_type_noST)]), col="#00688B", lty=2)
-legend("topright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep=""), paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep="")), lty=c(2,1), col=c("#00688B", "#FF1493"))
+par(mfrow = c(1,3))
+plot(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "SC" & 
+                                        complete.cases(devDTA$AC_type_noST)]), 
+     col = "#FF1493", xlim = c(0,60), ylim = c(0, 0.1), main = "Before matching", 
+     xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "GEN" & 
+                                         complete.cases(devDTA$AC_type_noST)]), 
+      col = "#00688B", lty = 2)
+legend("topright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
 
-plot(density(matched1$SC_percent71_true[matched1$AC_type_noST=="SC"]), col="#FF1493", xlim=c(0,60), ylim=c(0, 0.1), main="After matching", xlab="Percentage of SCs in constituency" , las=1)
-lines(density(matched1$SC_percent71_true[matched1$AC_type_noST=="GEN"]), col="#00688B", lty=2)
-legend("topright", c(paste("General (N=", summary(matched1$AC_type_noST)[1], ")", sep=""), paste("Reserved (N=", summary(matched1$AC_type_noST)[2], ")", sep="")), lty=c(2,1), col=c("#00688B", "#FF1493"))
+plot(density(matched1$SC_percent71_true[matched1$AC_type_noST == "SC"]), col = "#FF1493", 
+     xlim = c(0,60), ylim = c(0, 0.1), main = "After matching", 
+     xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(matched1$SC_percent71_true[matched1$AC_type_noST == "GEN"]), col = "#00688B", 
+      lty = 2)
+legend("topright", c(paste("General (N=", summary(matched1$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(matched1$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
 
-plot(density(matched2$SC_percent71_true[matched2$AC_type_noST=="SC"]), col="#FF1493", xlim=c(0,60), ylim=c(0, 0.1), main="After matching with caliper", xlab="Percentage of SCs in constituency", las=1)
-lines(density(matched2$SC_percent71_true[matched2$AC_type_noST=="GEN"]), col="#00688B", lty=2)
-legend("topright", c(paste("General (N=", summary(matched2$AC_type_noST)[1], ")", sep=""), paste("Reserved (N=", summary(matched2$AC_type_noST)[2], ")", sep="")), lty=c(2,1), col=c("#00688B", "#FF1493"))
+plot(density(matched2$SC_percent71_true[matched2$AC_type_noST == "SC"]), col = "#FF1493", 
+    xlim = c(0,60), ylim = c(0, 0.1), main = "After matching with caliper", 
+    xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(matched2$SC_percent71_true[matched2$AC_type_noST == "GEN"]), col = "#00688B", 
+      lty = 2)
+legend("topright", c(paste("General (N=", summary(matched2$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(matched2$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
 dev.off()
 
 ###############################################
@@ -582,70 +601,85 @@ dev.off()
 ###############################################
 
 ##Calculating matching estimates for Table 3 and Figure 4
-##Remove # from lines with alternative SE specification to check robustness to other SEs.
 
-mymatrix<-matrix(nrow=length(outcomeindex), ncol=12)
+##Remove # from lines with alternative SE specification to check robustness to
+##other SEs.
+
+mymatrix <- matrix(nrow = length(outcomeindex), ncol = 12)
 
 for(i in 2:length(outcomeindex)){
 
-matched1_smaller<-matched1[complete.cases(matched1[outcomeindex[i]], matched1$AC_type_noST),]
-matched2_smaller<-matched2[complete.cases(matched2[outcomeindex[i]], matched2$AC_type_noST),]
+matched1_smaller <- matched1[complete.cases(matched1[outcomeindex[i]], matched1$AC_type_noST), ]
+matched2_smaller <- matched2[complete.cases(matched2[outcomeindex[i]], matched2$AC_type_noST), ]
 
-mymodel<-lm(matched1_smaller[, outcomeindex[i]]~ matched1_smaller$AC_type_noST)
+mymodel <- lm(matched1_smaller[, outcomeindex[i]] ~ matched1_smaller$AC_type_noST)
 
 #SEs clustered at state level
-mySE<-clusterSE(mymodel, data= matched1_smaller, cluster="State_no_2001_old")
+mySE <- clusterSE(mymodel, data = matched1_smaller, cluster = "State_no_2001_old")
 
-mymatrix[i,1]<-round(mymodel$coef[2],2)
-mymatrix[i,2]<-round(mymodel$coef[2]+qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,3]<-round(mymodel$coef[2]-qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,4]<-ifelse(coeftest(mymodel, mySE)[2,4]<0.01, "<0.01", 	round(coeftest(mymodel, mySE)[2,4],2))
+mymatrix[i, 1] <- round(mymodel$coef[2], 2)
+mymatrix[i, 2] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 3] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 4] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                         round(coeftest(mymodel, mySE)[2, 4], 2))
 
 # Naive SEs from OLS
 #mymatrix[i,c(2:3)]<-round(confint(mymodel)[2,],2)
-#mymatrix[i,4]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01", round(coef(summary.lm(mymodel))[2,4],2))
+
+#mymatrix[i,4]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
 
 #And now with caliper
-mymodel<-lm(matched2_smaller[, outcomeindex[i]]~ matched2_smaller$AC_type_noST)
+mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST)
 
 #SEs clustered at state level
-mySE<-clusterSE(mymodel, data= matched2_smaller, cluster="State_no_2001_old")
+mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
-mymatrix[i,5]<-round(mymodel$coef[2],2)
-mymatrix[i,6]<-round(mymodel$coef[2]+qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,7]<-round(mymodel$coef[2]-qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,8]<-ifelse(coeftest(mymodel, mySE)[2,4]<0.01, "<0.01", 	round(coeftest(mymodel, mySE)[2,4],2))
+mymatrix[i, 5] <- round(mymodel$coef[2], 2)
+mymatrix[i, 6] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 7] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i,8] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                        round(coeftest(mymodel, mySE)[2, 4], 2))
 
 # Naive SEs from OLS
 #mymatrix[i,c(6:7)]<-round(confint(mymodel)[2,],2)
-#mymatrix[i,8]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01", round(coef(summary.lm(mymodel))[2,4],2))
+
+#mymatrix[i,8]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
 
 #And now with bias adjust
 
-SCpop<-matched2_smaller$SC_pop71_true
-mymodel<-lm(matched2_smaller[, outcomeindex[i]]~ matched2_smaller$AC_type_noST+ SCpop)
+SCpop <- matched2_smaller$SC_pop71_true
+mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST + SCpop)
 
 #SEs clustered at state level
-mySE<-clusterSE(mymodel, data= matched2_smaller, cluster="State_no_2001_old")
+mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
-mymatrix[i,9]<-round(mymodel$coef[2],2)
-mymatrix[i,10]<-round(mymodel$coef[2]+qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,11]<-round(mymodel$coef[2]-qnorm(.975)*coeftest(mymodel, mySE)[2,2],2)
-mymatrix[i,12]<-ifelse(coeftest(mymodel, mySE)[2,4]<0.01, "<0.01", 	round(coeftest(mymodel, mySE)[2,4],2))
+mymatrix[i, 9] <- round(mymodel$coef[2], 2)
+mymatrix[i, 10] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 11] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 12] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                          round(coeftest(mymodel, mySE)[2, 4], 2))
 
 # Naive SEs from OLS
 #mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
 #mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01", round(coef(summary.lm(mymodel))[2,4],2))
 }	
 	
-row.names(mymatrix)<-names(devDTA[outcomeindex])
-colnames(mymatrix)<-c("Difference", "Conf.int min", "Conf.int max", "P-value", "Difference", "Conf.int min", "Conf.int max", "P-value", "Difference", "Conf.int min", "Conf.int max", "P-value")
+row.names(mymatrix) <- names(devDTA[outcomeindex])
+colnames(mymatrix) <- c("Difference", "Conf.int min", "Conf.int max", "P-value", "Difference", 
+                        "Conf.int min", "Conf.int max", "P-value", "Difference", "Conf.int min", 
+                        "Conf.int max", "P-value")
 
-row.names(mymatrix)<-c("Percentage SCs", "Literacy rate ", "Employment rate ", "Agricultural laborers", "Electricity in village", "School in village ","Medical facility in village","Comm. channel in village",
-"Literacy gap", "Employment gap", "Agricultural laborers gap",   "Electricity in village gap", "School in village gap","Medical facility in village gap","Comm. channel in village gap")
+row.names(mymatrix) <- c("Percentage SCs", "Literacy rate ", "Employment rate ", 
+                         "Agricultural laborers", "Electricity in village", "School in village ",
+                         "Medical facility in village","Comm. channel in village", "Literacy gap", 
+                         "Employment gap", "Agricultural laborers gap", 
+                         "Electricity in village gap", "School in village gap",
+                         "Medical facility in village gap","Comm. channel in village gap")
 
-figurematrix<-mymatrix[-1,-c(1:4)]
-articlematrix<-mymatrix[-1,c(1,4,NA, 5,8,NA, 9,12)]
+figurematrix <- mymatrix[-1, -c(1:4)]
+articlematrix <- mymatrix[-1, c(1, 4, NA, 5, 8, NA, 9, 12)]
 
 library(xtable)
 xtable(articlematrix)
@@ -653,26 +687,31 @@ xtable(articlematrix)
 #pdf(file="Figures/Fig_matching_est.pdf", height=7, width =7)
 par(mar = c(4, 12, 1, .5))
 
-plot(x=NULL,axes=F, xlim=c(-10, 10), ylim=c(1,14),xlab="Difference in percentage points in 2001 (SC-GEN)", ylab="", cex.main=2)
+plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
+     xlab = "Difference in percentage points in 2001 (SC-GEN)", ylab = "", cex.main = 2)
 # add the 0, vertical lines
 
-abline(v=0, lty=3)
-axis(side=1,tick=TRUE, las=1, cex.axis=1)
-axis(side=2,at=c(14:1), labels=row.names(figurematrix), cex.axis=1, las=1, tick=F)
+abline(v = 0, lty = 3)
+axis(side = 1,tick = TRUE, las = 1, cex.axis = 1)
+axis(side = 2,at = c(14:1), labels = row.names(figurematrix), cex.axis = 1, las = 1, tick = F)
 #Writing in variable names
 
 for (i in 1:nrow(figurematrix)) {
-arrows(x0=as.numeric(figurematrix[i,2]), x1= as.numeric(figurematrix[i,3]), y0=(15-i+.1), y1=(15-i+.1), angle=90, length=.025, code=3)
+arrows(x0 = as.numeric(figurematrix[i, 2]), x1 = as.numeric(figurematrix[i, 3]), 
+       y0 = (15 - i + .1), y1 = (15 - i + .1), angle = 90, length = .025, code = 3)
 
-arrows(x0=as.numeric(figurematrix[i,6]), x1= as.numeric(figurematrix[i,7]), y0=(15-i-.1), y1=(15-i-.1), angle=90, length=.025, code=3)
+arrows(x0 = as.numeric(figurematrix[i, 6]), x1 = as.numeric(figurematrix[i, 7]), 
+       y0 = (15 - i - .1), y1 = (15 - i - .1), angle = 90, length = .025, code = 3)
 
-points(x=as.numeric(figurematrix[i,1]), y=15-i+.1, pch=19, cex=.7)
+points(x = as.numeric(figurematrix[i, 1]), y = 15 - i + .1, pch = 19, cex = .7)
 
-points(x=as.numeric(figurematrix[i,5]), y=15-i-.1, pch=1, cex=.7 ,  col="gray40")
-text(x=95, y=i, figurematrix[i,4], cex=.8)
+points(x = as.numeric(figurematrix[i, 5]), y = 15 - i - .1, pch = 1, cex = .7, col = "gray40")
+text(x = 95, y = i, figurematrix[i, 4], cex = .8)
 
 }
-legend(x=2.2, y=4, pch=c(19, 1, NA), lty=c(NA, NA, 1), legend=c("Matching est.", "Bias-adjusted est.", "95% conf. interval"), cex=.9, bg="white", merge=T)
+legend(x = 2.2, y = 4, pch = c(19, 1, NA), lty = c(NA, NA, 1), 
+       legend = c("Matching est.", "Bias-adjusted est.", "95% conf. interval"), 
+       cex = .9, bg = "white", merge = T)
 dev.off()
 
 
@@ -685,20 +724,20 @@ dev.off()
 #DTA$P_al_71gap
 #DTA$P_W71_gap
 
-PropSC<-matched2$SC_percent71_true 
-educ_lag<-matched2$Plit71_SC
-worker_lag<-matched2$P_W71_SC 
-agr_lag<-matched2$P_al71_SC
-stateFE<-as.factor(matched2$State_no_2001_old)
+PropSC <- matched2$SC_percent71_true 
+educ_lag <- matched2$Plit71_SC
+worker_lag <- matched2$P_W71_SC 
+agr_lag <- matched2$P_al71_SC
+stateFE <- as.factor(matched2$State_no_2001_old)
 
-model1lm<-lm(matched2$Plit_SC_7 ~ matched2$AC_type_noST* PropSC)
-model3lm<-lm(matched2$Plit_SC_7 ~ educ_lag +matched2$AC_type_noST* PropSC + stateFE)
+model1lm <- lm(matched2$Plit_SC_7 ~ matched2$AC_type_noST * PropSC)
+model3lm <- lm(matched2$Plit_SC_7 ~ educ_lag + matched2$AC_type_noST * PropSC + stateFE)
 
-model4lm<-lm(matched2$P_W_SC ~ matched2$AC_type_noST* PropSC)
-model6lm<-lm(matched2$P_W_SC ~ worker_lag +matched2$AC_type_noST* PropSC + stateFE)
+model4lm <- lm(matched2$P_W_SC ~ matched2$AC_type_noST * PropSC)
+model6lm <- lm(matched2$P_W_SC ~ worker_lag + matched2$AC_type_noST * PropSC + stateFE)
 
-model7lm<-lm(matched2$P_al_SC ~ matched2$AC_type_noST* PropSC)
-model9lm<-lm(matched2$P_al_SC ~ agr_lag +matched2$AC_type_noST* PropSC + stateFE)
+model7lm <- lm(matched2$P_al_SC ~ matched2$AC_type_noST * PropSC)
+model9lm <- lm(matched2$P_al_SC ~ agr_lag + matched2$AC_type_noST * PropSC + stateFE)
 
 summary(model1lm)
 summary(model3lm)
@@ -707,16 +746,20 @@ summary(model6lm)
 summary(model7lm)
 summary(model9lm)
 
-model1lm$se<-clusterSE(model1lm, data=matched2, cluster="State_no_2001_old")
-model3lm$se<-clusterSE(model3lm, data=matched2, cluster="State_no_2001_old")
-model4lm$se<-clusterSE(model4lm, data=matched2, cluster="State_no_2001_old")
-model6lm$se<-clusterSE(model6lm, data=matched2, cluster="State_no_2001_old")
-model7lm$se<-clusterSE(model7lm, data=matched2, cluster="State_no_2001_old")
-model9lm$se<-clusterSE(model9lm, data=matched2, cluster="State_no_2001_old")
+model1lm$se <-clusterSE(model1lm, data = matched2, cluster = "State_no_2001_old")
+model3lm$se <-clusterSE(model3lm, data = matched2, cluster = "State_no_2001_old")
+model4lm$se <-clusterSE(model4lm, data = matched2, cluster = "State_no_2001_old")
+model6lm$se <-clusterSE(model6lm, data = matched2, cluster = "State_no_2001_old")
+model7lm$se <-clusterSE(model7lm, data = matched2, cluster = "State_no_2001_old")
+model9lm$se <-clusterSE(model9lm, data = matched2, cluster = "State_no_2001_old")
 
 
 library(apsrtable)
-table_OLS<-apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9lm, se="robust", omitcoef=c(6:19),  coef.names=c("Intercept", "SC reserved", "Percentage SC", "SC reserved * Percentage SC", "Literacy SC in 1971", "Worker SC in 1971", "Agr. laborer SC in 1971"))
+table_OLS <- apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9lm, 
+                       se = "robust", omitcoef = c(6:19),  
+                       coef.names = c("Intercept", "SC reserved", "Percentage SC", 
+                                      "SC reserved * Percentage SC", "Literacy SC in 1971", 
+                                      "Worker SC in 1971", "Agr. laborer SC in 1971"))
 
 #Table 4
 table_OLS
@@ -729,42 +772,50 @@ load("Vill_AC.RData")
 dim(vill_con) 
 names(vill_con)
 
-vill_con$VD01_state_id<-as.numeric(as.character(vill_con$VD01_state_id))
+vill_con$VD01_state_id <- as.numeric(as.character(vill_con$VD01_state_id))
 summary(vill_con$VD01_state_id)
 summary(vill_con$VD01_AC_id)
 summary(matched2$State_number_2001)
 summary(matched2$AC_no_2001)
 ##reducde to ACs that are in matched2
-vill<-merge(vill_con, matched2[,c(1:2, 28)], by.x=c("VD01_state_id", "VD01_AC_id"), by.y=c("State_number_2001", "AC_no_2001"))
+vill <- merge(vill_con, matched2[, c(1:2, 28)], by.x = c("VD01_state_id", "VD01_AC_id"), 
+              by.y = c("State_number_2001", "AC_no_2001"))
 
 names(vill)
 dim(vill)
 
-PropSC_vill<-(as.numeric(as.character(vill$VD01_sc_p))/as.numeric(as.character(vill$VD01_t_p)))
-states<-as.factor(vill$VD01_state_id)
+PropSC_vill <- (as.numeric(as.character(vill$VD01_sc_p)) / as.numeric(as.character(vill$VD01_t_p)))
+states <- as.factor(vill$VD01_state_id)
 
-model1glm<-glm(vill$VD01_power_supl ~ vill$AC_type_noST*PropSC_vill +as.factor(vill$VD01_state_id), family=binomial(link = "logit"))
+model1glm <- glm(vill$VD01_power_supl ~ vill$AC_type_noST * PropSC_vill + 
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
-model2glm<-glm(vill$VD01_educ ~ vill$AC_type_noST*PropSC_vill +as.factor(vill$VD01_state_id), family=binomial(link = "logit"))
+model2glm <- glm(vill$VD01_educ ~ vill$AC_type_noST * PropSC_vill + 
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
-model3glm<-glm(vill$VD01_medic ~ vill$AC_type_noST*PropSC_vill +as.factor(vill$VD01_state_id), family=binomial(link = "logit"))
+model3glm <- glm(vill$VD01_medic ~ vill$AC_type_noST * PropSC_vill +
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
-model4glm<-glm(vill$VD01_comm ~ vill$AC_type_noST*PropSC_vill +as.factor(vill$VD01_state_id), family=binomial(link = "logit"))
+model4glm <- glm(vill$VD01_comm ~ vill$AC_type_noST * PropSC_vill +
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
 ##Try to cluster errors by AC, district, and state
 #SEs clustered at state level. Remove # to check clustered at other levels
 #cluster<-"VD01_uniqueAC"
 #vill$VD01_district_unique<-paste(vill$VD01_state_id, "-", vill$VD01_district_id, sep="")
 #cluster<-"VD01_district_unique"
-cluster<-"VD01_state_id"
+cluster <- "VD01_state_id"
 
-model1glm$se<-clusterSE(model1glm, data=vill, cluster=cluster)
-model2glm$se<-clusterSE(model2glm, data=vill, cluster=cluster)
-model3glm$se<-clusterSE(model3glm, data=vill, cluster=cluster)
-model4glm$se<-clusterSE(model4glm, data=vill, cluster=cluster)
+model1glm$se <- clusterSE(model1glm, data = vill, cluster = cluster)
+model2glm$se <- clusterSE(model2glm, data = vill, cluster = cluster)
+model3glm$se <- clusterSE(model3glm, data = vill, cluster = cluster)
+model4glm$se <- clusterSE(model4glm, data = vill, cluster = cluster)
 
 library(apsrtable)
-table_logit<-apsrtable(model1glm, model2glm, model3glm , model4glm, se="both", stars=1, omitcoef=c(4:19), coef.names=c("Intercept", "SC reserved", "Proportion SC", "SC reserved * Proportion SC"))
+table_logit <- apsrtable(model1glm, model2glm, model3glm, model4glm, se = "both", 
+                         stars = 1, omitcoef = c(4:19), 
+                         coef.names = c("Intercept", "SC reserved", "Proportion SC", 
+                                        "SC reserved * Proportion SC"))
 
 ##Table 5
 table_logit
