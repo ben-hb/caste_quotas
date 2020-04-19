@@ -1,0 +1,56 @@
+---
+title: "Milestone 4"
+author: "Benjamin Hoffner-Brodsky"
+date: "4/17/2020"
+output: bookdown::pdf_document2
+keep_tex: TRUE
+bibliography: bib.bib
+link_citations: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(gt)
+library(stargazer)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+# Sample Table 
+
+```{r sample_table}
+
+nrow <- 3
+ncol <- 4
+
+truth.matrix <- matrix(data = rep("Preceptor is God", nrow * ncol), nrow = nrow, ncol = ncol)
+
+colnames(truth.matrix) <- c("Truth", "Also Truth", "Still Truth", "Incredibly, True")
+
+gt(truth.matrix) %>% 
+  tab_header(
+    title = "Truth Table",
+    subtitle = "P-values 0 for all Coefficients"
+  )
+
+```
+
+# Sample Regression Table 
+
+```{r sample_regression, results = "asis"}
+
+is_preceptor <- c(1, 0)
+teaches_1006 <- c(1, 0)
+
+causal_teaches_1006 <- lm(teaches_1006 ~ is_preceptor)
+
+stargazer(causal_teaches_1006, header = FALSE, type = "latex")
+```
+
+For further information on the replication, please see my GitHub Repo^[[Development without Representation Replication Repo](https://github.com/ben-hb/development_without_representation_replication)]. 
