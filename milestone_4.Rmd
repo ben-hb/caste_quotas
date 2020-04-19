@@ -2,16 +2,16 @@
 title: "Milestone 4"
 author: "Benjamin Hoffner-Brodsky"
 date: "4/17/2020"
-output: bookdown::pdf_document2
-keep_tex: TRUE
 bibliography: bibliography.bib
+output: bookdown::pdf_document2
+#keep_tex: TRUE
 link_citations: TRUE
 biblio-style: "apalike"
+#nocite: '@*'
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-knitr::write_bib(c("knitr", "stringr"), "bibliography.bib", width = 60)
 
 library(gt)
 library(stargazer)
@@ -49,8 +49,11 @@ causal_teaches_1006 <- lm(teaches_1006 ~ is_preceptor)
 stargazer(causal_teaches_1006, header = FALSE, type = "latex")
 ```
 
+# Sample Citations 
+
+I cite @R-knitr and @R-stringr. 
+
 For further information on the replication, please see my GitHub Repo^[[Development without Representation Replication Repo](https://github.com/ben-hb/development_without_representation_replication)]. 
 
+\newpage 
 # References
-
-@R-knitr
