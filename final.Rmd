@@ -11,6 +11,9 @@ biblio-style: "apalike"
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
+# Note: where possible variable names are preserved from Jensenius' published
+# code to allow for easy methodological comparisons
+
 library(tidyverse)
 library(sandwich)
 library(lmtest)
@@ -144,7 +147,7 @@ xtable(mymatrix, align = c("l", "r", "r", "r", "r"),
 
 ```
 
-```{r graph_1}
+```{r figure_1}
 
 # Instructing R to attach devDTA to the R search path so that variables within
 # devDTA can be referenced solely by the column name
@@ -309,37 +312,11 @@ ggplot(myplot2, aes(x = x, y = y, group = group)) +
 
 ```
 
-```{r matching_models, include = FALSE}
+```{r table_2_setup, include = FALSE}
 
-
-# Creates a generalizable function to output evaluation of matches
-
-balanceTable <- function(covariates, bal.out){
-
-  cat("\\begin{table}[ht] \n")
-  cat("\\caption{Difference in means for treated and control and Balance output from matches} \n")
-  cat(" \\begin{tabular}{lrrcrr} \\hline \\hline \n")
-  cat("Covariate	&\\multicolumn{2}{c}{Before matching}",
-    "&&\\multicolumn{2}{c}{After matching}", "\\", "\\", "\\cline{2-3} \\cline{5-6} \n", sep = "")
-  cat("& \\emph{t p}-value &KS \\emph{p}-value &&",
-    "\\emph{t p}-value &KS \\emph{p}-value", "\\", "\\", "\n", sep = "")
+# Detaches devDTA from the R search path
   
-  z <- sapply(1:dim(covariates)[2], function(x){
-    cat(names(covariates)[x], "&",
-    round(bal.out$BeforeMatching[[x]]$tt$p.value,2), "&",
-    ifelse(is.null(bal.out$BeforeMatching[[x]]$ks$ks.boot.pvalue) == 0,
-      round(bal.out$BeforeMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "&&",
-    round(bal.out$AfterMatching[[x]]$tt$p.value,2), "&",
-    ifelse(is.null(bal.out$AfterMatching[[x]]$ks$ks.boot.pvalue) == 0,
-      round(bal.out$AfterMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "\\", "\\", "\n",
-      sep = "")
-  })
-  cat("\\end{tabular} \\end{table} \n")
-  }
-
-# Detaches devDTA from the R search path on first run and matchdta on second run
-  
-detach()
+detach(devDTA)
   
 # Subsets devDTA to just the observations for which all of the following values
 # are known: the percentage of Scheduled Caste individuals in 1971, the state an
@@ -395,154 +372,552 @@ Matched_norep1 <- Matching::Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT",
                        exact = c(TRUE, TRUE, TRUE, FALSE), 
                      replace = FALSE)
 
+# Evaluate whether or not the match was successful in achieving balance on the
+# observed covariates
 
 bal_SC_norep1 <- Matching::MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep1, nboots = 1000, 
                             data = matchdta)
+
+# Evaluates whether or not the match was successful using a wider array of
+# covariates than before
 
 bal.out_norep1 <- Matching::MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC + 
                                 P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC, 
                               match.out=Matched_norep1, nboots = 1000, data = matchdta)
 
-covariates1 <- cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
+# Prepares covariates for professional output
+
+covariates <- cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
                                   P_W71_SC, P_al71_nonSC, P_al71_SC) %>% 
   as.data.frame()
 
-names(covariates1) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
+names(covariates) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
                      "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", 
                      "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
 
+# Prepares results for future analysis 
+
+treatedDTA1 <- matchdta[Matched_norep1$index.treated, ]
+controlDTA1 <- matchdta[Matched_norep1$index.control, ]
+treatedDTA1$index.match <- c(1:dim(treatedDTA1)[1])
+controlDTA1$index.match <- c(1:dim(controlDTA1)[1])
+
+matched1 <- rbind(treatedDTA1, controlDTA1)
+
 # Caliper Matching
+
+# Runs the same estimation as for Matched_norep1 except with specified calipers,
+# or acceptable distances for matching, to specify a tolerance of 0.5 stanard
+# deviations for the percentage of Scheduled Caste individuals in 1971
 
 Matched_norep2 <- Matching::Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT", 
                        exact = c(TRUE, TRUE, TRUE, FALSE), 
                      replace = FALSE, caliper = c(0, 0, 0, .5))
 
+# Evaluate whether or not the match was successful in achieving balance on the
+# observed covariates
+
 bal_SC_norep2 <- Matching::MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep2, nboots = 1000, 
                             data = matchdta)
+
+# Evaluates whether or not the match was successful using a wider array of
+# covariates than before
 
 bal.out_norep2 <- Matching::MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC + 
                                 P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC, 
                               match.out = Matched_norep2, nboots = 1000, data = matchdta)
 
-covariates2 <- cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC, 
-                                  P_W71_SC, P_al71_nonSC, P_al71_SC) %>% 
-  as.data.frame()
+# Prepares results for future analysis 
 
-names(covariates2) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)", 
-                     "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)", 
-                     "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
+treatedDTA2 <- matchdta[Matched_norep2$index.treated, ]
+controlDTA2 <- matchdta[Matched_norep2$index.control, ]
+treatedDTA2$index.match <- c(1:dim(treatedDTA2)[1])
+controlDTA2$index.match <- c(1:dim(controlDTA2)[1])
 
+matched2 <- rbind(treatedDTA2, controlDTA2)
 
-
-
-
-
-
-
-# Initiate model matching for loop
-
-for (i in 1:2) {
-
-# Only runs the first iteration of the loop
-
-if (i == 1) {
-
-# Estimates the average treatment effect with literacy rate as the outcome
-# variable being matched on the explanatory variables in X for the treatments in
-# Tr, which does exact matching for all explanatory variables except for the
-# percentage of Scheduled Caste individuals in 1971
-
-# This is done using a multivariate and propensity score matching estimator
-
-Matched_norep <- Matching::Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT",
-                       exact = c(TRUE, TRUE, TRUE, FALSE),
-                     replace = FALSE)
-
-# Only runs the second iteration of the loop
-
-} else if (i == 2) {
-
-# Runs the same estimation as for i==1 except with specified calipers, or
-# acceptable distances for matching, to specify a tolerance of 0.5 stanard
-# deviations for the percentage of Scheduled Caste individuals in 1971
-
-Matched_norep <- Matching::Match(Y = Plit, Tr = Tr, X = X, estimand = "ATT",
-                       exact = c(TRUE, TRUE, TRUE, FALSE),
-                     replace = FALSE, caliper = c(0, 0, 0, .5))
-}
-
-# Each of these evaluate whether or not the match was successful in achieving
-# balance on the observed covariates
-
-if (i == 1) {
-
-bal_SC_norep1 <- Matching::MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep, nboots = 1000,
-                            data = matchdta)
-
-}
-
-else if (i == 2) {
-
-bal_SC_norep2 <- Matching::MatchBalance(Tr ~ SC_percent71_true, match.out = Matched_norep, nboots = 1000,
-                            data = matchdta)
-
-}
-
-# Evaluates whether or not the match was successful using a wider array of
-# covariates than before
-
-bal.out_norep <- Matching::MatchBalance(Tr ~ Pop_tot1971 + P_ST71 + Plit71_nonSC + Plit71_SC +
-                                P_W71_nonSC + P_W71_SC + P_al71_nonSC + P_al71_SC,
-                              match.out=Matched_norep, nboots = 1000, data = matchdta)
-
-# Prepares covariates for professional output
-
-covariates <- cbind(Pop_tot1971, P_ST71, Plit71_nonSC, Plit71_SC, P_W71_nonSC,
-                                  P_W71_SC, P_al71_nonSC, P_al71_SC) %>%
-  as.data.frame()
-
-names(covariates) <- c("Population size", "Percentage of STs", "Literacy rate (non-SCs)",
-                     "Literacy rate (SCs)", "Employment (non-SCs)", "Employment (SCs)",
-                     "Agricultural laborers (non-SCs)", "Agricultural laborers (SCs)")
-
-if (i == 1) {
-  balance_table_1 <- capture.output(balanceTable(covariates, bal.out_norep))
-}
-
-if (i == 2) {
-  balance_table_2 <- capture.output(balanceTable(covariates, bal.out_norep))
-}
-
-# Pepares results from each loop iteration
-
-##output
-
-treatedDTA <- matchdta[Matched_norep$index.treated, ]
-controlDTA <- matchdta[Matched_norep$index.control, ]
-treatedDTA$index.match <- c(1:dim(treatedDTA)[1])
-controlDTA$index.match <- c(1:dim(controlDTA)[1])
-
-# Outputs final results of each loop iteration
-
-if(i == 1){
-
-matched1 <- rbind(treatedDTA, controlDTA)
-
-} else {
-
-matched2 <- rbind(treatedDTA, controlDTA)
-
-}
-
-# End model matching for loop
-
-}
 ```
 
-```{r out_balance_tables, results = "asis"}
+```{r table_2, results = "asis"}
 
-balanceTable(covariates1, bal.out_norep1)
-balanceTable(covariates2, bal.out_norep2)
+# Outputs a table with the t and KS p-values before matching, after matching,
+# and after matching with caliper
+
+balanceTable2 <- function(covariates, bal.out1, bal.out2){
+
+  cat("\\begin{table}[ht] \n")
+  cat("\\caption{Difference in means for treated and control and Balance output from matches} \n")
+  cat(" \\resizebox{\\textwidth}{!}{ \n \\begin{tabular}{lrrrrrr} \\hline \\hline \n")
+  cat("Covariate	&\\multicolumn{2}{c}{Before matching}",
+    "&\\multicolumn{2}{c}{After matching}", "&\\multicolumn{2}{c}{Matching (caliper)}", "\\", "\\", "\\cline{2-3} \\cline{4-5} \\cline{6-7} \n", sep = "")
+  cat("& \\emph{t p}-value &KS \\emph{p}-value &",
+    "\\emph{t p}-value &KS \\emph{p}-value &", "\\emph{t p}-value &KS \\emph{p}-value",
+    "\\", "\\", "\n", sep = "")
+  
+  z <- sapply(1:dim(covariates)[2], function(x){
+    cat(names(covariates)[x], "&",
+    round(bal.out1$BeforeMatching[[x]]$tt$p.value,2), "&",
+    ifelse(is.null(bal.out1$BeforeMatching[[x]]$ks$ks.boot.pvalue) == 0,
+      round(bal.out1$BeforeMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "&",
+    round(bal.out1$AfterMatching[[x]]$tt$p.value,2), "&",
+    ifelse(is.null(bal.out1$AfterMatching[[x]]$ks$ks.boot.pvalue) == 0,
+      round(bal.out1$AfterMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "&",
+    round(bal.out2$AfterMatching[[x]]$tt$p.value,2), "&",
+    ifelse(is.null(bal.out2$AfterMatching[[x]]$ks$ks.boot.pvalue) == 0,
+      round(bal.out2$AfterMatching[[x]]$ks$ks.boot.pvalue,2), "---"), "\\", "\\", "\n",
+      sep = "")
+  })
+  cat("\\end{tabular}} \\end{table} \n")
+}
+
+balanceTable2(covariates, bal.out_norep1, bal.out_norep2)
+
+```
+
+```{r figure_3}
+
+
+detach(matchdta)
+
+##Balance on SC percentage
+
+# Checks for balance in matching across original dataset and the matched
+# datasets from both iterations of the above loop
+
+t.test(devDTA$SC_percent71_true ~ devDTA$AC_type_noST)
+t.test(matched1$SC_percent71_true ~ matched1$AC_type_noST)
+t.test(matched2$SC_percent71_true ~ matched2$AC_type_noST)
+
+###Figure showing balance on percentage SC
+
+#Commented out, as the pdf is not included in the replication files
+
+#pdf("Figures/Fig_SC_percent71_balance_AEJ.pdf", width=7, height=3)
+
+# Setts the dimensions for the forthcoming figures
+
+par(mai = c(0.8, 0.3, 0.3, 0.1))
+par(mfrow = c(1,3))
+
+# Plots the distribution of the percentage of Scheduled Caste members in the
+# constituency for both the General and Reserved Constituencies. The first plot
+# shows hows this looks before matching, demonstrating that Reserved
+# Constituencies tend to have a higher percentage of Scheduled Caste Community
+# members than do General Constituencies. The second plot shows how this looks
+# after matching, with the two distributions now being much closer but the
+# Reserved Constituency distribution still being slightly to the right of the
+# General Constituency distribution. The third plot shows this using matching
+# with the more precise application of caliper, with a 0.5 standard deviation
+# tolerance for matching, which now shows nearly identical distributions, though
+# with a tiny right skew still remaining for Reserved Constituencies.
+
+# First Plot: Before Matching
+
+plot(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "SC" & 
+                                        complete.cases(devDTA$AC_type_noST)]), 
+     col = "#FF1493", xlim = c(0,60), ylim = c(0, 0.1), main = "Before matching", 
+     xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "GEN" & 
+                                         complete.cases(devDTA$AC_type_noST)]), 
+      col = "#00688B", lty = 2)
+legend("topright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
+
+# Second Plot: After Matching
+
+plot(density(matched1$SC_percent71_true[matched1$AC_type_noST == "SC"]), col = "#FF1493", 
+     xlim = c(0,60), ylim = c(0, 0.1), main = "After matching", 
+     xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(matched1$SC_percent71_true[matched1$AC_type_noST == "GEN"]), col = "#00688B", 
+      lty = 2)
+legend("topright", c(paste("General (N=", summary(matched1$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(matched1$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
+
+# Third Plot: After Matching with Caliper
+
+plot(density(matched2$SC_percent71_true[matched2$AC_type_noST == "SC"]), col = "#FF1493", 
+    xlim = c(0,60), ylim = c(0, 0.1), main = "After matching with caliper", 
+    xlab = "Percentage of SCs in constituency", las = 1)
+lines(density(matched2$SC_percent71_true[matched2$AC_type_noST == "GEN"]), col = "#00688B", 
+      lty = 2)
+legend("topright", c(paste("General (N=", summary(matched2$AC_type_noST)[1], ")", sep = ""), 
+                     paste("Reserved (N=", summary(matched2$AC_type_noST)[2], ")", sep = "")), 
+       lty = c(2,1), col = c("#00688B", "#FF1493"))
+
+# Ends plotting session and clears figure parameters set by par()
+
+dev.off()
+
+```
+
+```{r matching_estimates}
+
+
+##Calculating matching estimates for Table 3 and Figure 4
+
+##Remove # from lines with alternative SE specification to check robustness to
+##other SEs.
+
+# Generates a new matrix with row number equivalent to the number of outcome
+# variables of interest
+
+mymatrix <- matrix(nrow = length(outcomeindex), ncol = 12)
+
+# for loop to run regressions and calculate standard errors begins
+# Iterates once for each outcome variable of interest 
+
+for(i in 2:length(outcomeindex)){
+
+# Prepares both matched models for regression 
+  
+matched1_smaller <- matched1[complete.cases(matched1[outcomeindex[i]], matched1$AC_type_noST), ]
+matched2_smaller <- matched2[complete.cases(matched2[outcomeindex[i]], matched2$AC_type_noST), ]
+
+# Regresses outcome variable of interest on type of constituency
+
+mymodel <- lm(matched1_smaller[, outcomeindex[i]] ~ matched1_smaller$AC_type_noST)
+
+#SEs clustered at state level
+
+# Runs clusterSE() from earlier to calculate clustered standard errors
+
+mySE <- clusterSE(mymodel, data = matched1_smaller, cluster = "State_no_2001_old")
+
+# Outputs difference coefficient for all matches to the first column to prepare
+# for the xtable() call
+
+mymatrix[i, 1] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
+mymatrix[i, 2] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 3] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for all matches to the second column to prepare for the
+# xtable() call
+
+mymatrix[i, 4] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                         round(coeftest(mymodel, mySE)[2, 4], 2))
+
+# Naive SEs from OLS
+#mymatrix[i,c(2:3)]<-round(confint(mymodel)[2,],2)
+
+#mymatrix[i,4]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
+
+#And now with caliper
+mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST)
+
+#SEs clustered at state level
+mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
+
+# Outputs difference coefficient for caliper matches to the third column to
+# prepare for the xtable() call
+
+mymatrix[i, 5] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
+mymatrix[i, 6] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 7] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for caliper matches to the fourth column to prepare for the
+# xtable() call
+
+mymatrix[i,8] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                        round(coeftest(mymodel, mySE)[2, 4], 2))
+
+# Naive SEs from OLS
+#mymatrix[i,c(6:7)]<-round(confint(mymodel)[2,],2)
+
+#mymatrix[i,8]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
+
+#And now with bias adjust
+
+SCpop <- matched2_smaller$SC_pop71_true
+mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST + SCpop)
+
+#SEs clustered at state level
+mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
+
+# Outputs difference coefficient for bias-adjusted matches to the fifth column
+# to prepare for the xtable() call
+
+mymatrix[i, 9] <- round(mymodel$coef[2], 2)
+
+# Intermediary steps - will be cleared before xtable()
+
+mymatrix[i, 10] <- round(mymodel$coef[2] + qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+mymatrix[i, 11] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[2, 2], 2)
+
+# Outputs p-values for bias-adjusted matches to the sixth column to prepare for
+# the xtable() call
+
+mymatrix[i, 12] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
+                          round(coeftest(mymodel, mySE)[2, 4], 2))
+
+#Naive SEs from OLS mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
+#mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
+#round(coef(summary.lm(mymodel))[2,4],2))
+
+# regression for loop ends
+
+}	
+
+# Setting the row and column names to prepare for the xtable() call
+	
+row.names(mymatrix) <- names(devDTA[outcomeindex])
+colnames(mymatrix) <- c("Difference", "Conf.int min", "Conf.int max", "P-value", "Difference", 
+                        "Conf.int min", "Conf.int max", "P-value", "Difference", "Conf.int min", 
+                        "Conf.int max", "P-value")
+
+row.names(mymatrix) <- c("Percentage SCs", "Literacy rate ", "Employment rate ", 
+                         "Agricultural laborers", "Electricity in village", "School in village ",
+                         "Medical facility in village","Comm. channel in village", "Literacy gap", 
+                         "Employment gap", "Agricultural laborers gap", 
+                         "Electricity in village gap", "School in village gap",
+                         "Medical facility in village gap","Comm. channel in village gap")
+
+# Subsetting matrix that will go on to make the coefficient figure below
+
+figurematrix <- mymatrix[-1, -c(1:4)]
+
+# Subsetting matrix that will be exported through xtable()
+
+articlematrix <- mymatrix[-1, c(1, 4, NA, 5, 8, NA, 9, 12)]
+
+# This looks to be third time xtable is loaded in
+
+library(xtable)
+xtable(articlematrix)
+
+# Setting margins for the forthcoming figure
+
+#pdf(file="Figures/Fig_matching_est.pdf", height=7, width =7)
+
+par(mar = c(4, 12, 1, .5))
+
+# Plotting coefficient differences for the matching estimate and bias-adjusted
+# estimate
+
+plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
+     xlab = "Difference in percentage points in 2001 (SC-GEN)", ylab = "", cex.main = 2)
+# add the 0, vertical lines
+
+abline(v = 0, lty = 3)
+axis(side = 1,tick = TRUE, las = 1, cex.axis = 1)
+axis(side = 2,at = c(14:1), labels = row.names(figurematrix), cex.axis = 1, las = 1, tick = F)
+#Writing in variable names
+
+# This appears to demonstrate the change in coefficients between the matching
+# estimate and bias-adjusted estimate in some form, however I'm having trouble
+# getting it to output
+
+for (i in 1:nrow(figurematrix)) {
+arrows(x0 = as.numeric(figurematrix[i, 2]), x1 = as.numeric(figurematrix[i, 3]), 
+       y0 = (15 - i + .1), y1 = (15 - i + .1), angle = 90, length = .025, code = 3)
+
+arrows(x0 = as.numeric(figurematrix[i, 6]), x1 = as.numeric(figurematrix[i, 7]), 
+       y0 = (15 - i - .1), y1 = (15 - i - .1), angle = 90, length = .025, code = 3)
+
+points(x = as.numeric(figurematrix[i, 1]), y = 15 - i + .1, pch = 19, cex = .7)
+
+points(x = as.numeric(figurematrix[i, 5]), y = 15 - i - .1, pch = 1, cex = .7, col = "gray40")
+text(x = 95, y = i, figurematrix[i, 4], cex = .8)
+
+}
+legend(x = 2.2, y = 4, pch = c(19, 1, NA), lty = c(NA, NA, 1), 
+       legend = c("Matching est.", "Bias-adjusted est.", "95% conf. interval"), 
+       cex = .9, bg = "white", merge = T)
+dev.off()
+
+
+```
+
+```{r table_4}
+
+# Outputting variables from matched2 into their own vectors for clearer
+# interpretation in the forthcoming regressions
+
+# This section explores the interaction effects with the percentage of Scheduled
+# Caste individuals in the community, with a particular intent to identify if
+# there is an interaction effect between percent SC and the type of constituency
+
+PropSC <- matched2$SC_percent71_true 
+educ_lag <- matched2$Plit71_SC
+worker_lag <- matched2$P_W71_SC 
+agr_lag <- matched2$P_al71_SC
+stateFE <- as.factor(matched2$State_no_2001_old)
+
+# In this section two distinct regression models are employed for each outcome
+# variable of interest
+
+# Model 1 regresses on the type of constituency, the proportion of Scheduled
+# Caste individuals, and the interaction effect of the two
+
+# Model 2 includes all of the explanatory variables from Model 1, in addition to
+# the baseline value of the outcome variable of interest and a state fixed
+# effect
+
+# Regressing Scheduled Caste literacy rate
+
+# Model 1 
+
+model1lm <- lm(matched2$Plit_SC_7 ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
+model3lm <- lm(matched2$Plit_SC_7 ~ educ_lag + matched2$AC_type_noST * PropSC + stateFE)
+
+# Regressing Scheduled Caste employment rate 
+
+# Model 1 
+
+model4lm <- lm(matched2$P_W_SC ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
+model6lm <- lm(matched2$P_W_SC ~ worker_lag + matched2$AC_type_noST * PropSC + stateFE)
+
+# Regressing Scheduled Caste agricultural labor share 
+
+# Model 1 
+
+model7lm <- lm(matched2$P_al_SC ~ matched2$AC_type_noST * PropSC)
+
+# Model 2 
+
+model9lm <- lm(matched2$P_al_SC ~ agr_lag + matched2$AC_type_noST * PropSC + stateFE)
+
+# Outputting regression results for internal check - vestigial
+
+summary(model1lm)
+summary(model3lm)
+summary(model4lm)
+summary(model6lm)
+summary(model7lm)
+summary(model9lm)
+
+# Estimating standardized errors clustered at the state level
+
+model1lm$se <- clusterSE(model1lm, data = matched2, cluster = "State_no_2001_old")
+model3lm$se <- clusterSE(model3lm, data = matched2, cluster = "State_no_2001_old")
+model4lm$se <- clusterSE(model4lm, data = matched2, cluster = "State_no_2001_old")
+model6lm$se <- clusterSE(model6lm, data = matched2, cluster = "State_no_2001_old")
+model7lm$se <- clusterSE(model7lm, data = matched2, cluster = "State_no_2001_old")
+model9lm$se <- clusterSE(model9lm, data = matched2, cluster = "State_no_2001_old")
+
+# Outputting results into apsr table 
+
+library(apsrtable)
+table_OLS <- apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9lm, 
+                       se = "robust", omitcoef = c(6:19),  
+                       coef.names = c("Intercept", "SC reserved", "Percentage SC", 
+                                      "SC reserved * Percentage SC", "Literacy SC in 1971", 
+                                      "Worker SC in 1971", "Agr. laborer SC in 1971"))
+
+# Printing table 
+
+#Table 4
+table_OLS
+```
+
+```{r table_5}
+
+
+# This section explores the possibility that there is no visible effect on net
+# development because quota-elected politicians shift resources from high
+# Scheduled Caste density areas to low density areas. It does so by attempting
+# to predict various development indicators, namely whether or not a village was
+# electrified, has a primary school, has a medical facility, and has a
+# communication channel, using an interaction model effect with type of
+# constituency and proportion of Scheduled Caste individuals
+
+#load full village dataset
+load("replication_files/Vill_AC.RData")
+
+# Checking data - vestigial 
+
+dim(vill_con) 
+names(vill_con)
+
+vill_con$VD01_state_id <- as.numeric(as.character(vill_con$VD01_state_id))
+summary(vill_con$VD01_state_id)
+summary(vill_con$VD01_AC_id)
+summary(matched2$State_number_2001)
+summary(matched2$AC_no_2001)
+
+# Only using villages that correspond to Assembly Constituencies from the quota
+# dataset
+
+##reducde to ACs that are in matched2
+vill <- merge(vill_con, matched2[, c(1:2, 28)], by.x = c("VD01_state_id", "VD01_AC_id"), 
+              by.y = c("State_number_2001", "AC_no_2001"))
+
+# Vestigial check 
+
+names(vill)
+dim(vill)
+
+# Preparing variables for regression
+
+PropSC_vill <- (as.numeric(as.character(vill$VD01_sc_p)) / as.numeric(as.character(vill$VD01_t_p)))
+states <- as.factor(vill$VD01_state_id)
+
+# Regressing outcome variables of interest on the interaction of type of
+# constituency and proportion Scheduled Caste and the state fixed effects
+
+# Electricity
+
+model1glm <- glm(vill$VD01_power_supl ~ vill$AC_type_noST * PropSC_vill + 
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+# Primary School
+
+model2glm <- glm(vill$VD01_educ ~ vill$AC_type_noST * PropSC_vill + 
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+# Medical Facility
+
+model3glm <- glm(vill$VD01_medic ~ vill$AC_type_noST * PropSC_vill +
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+# Communication Channel
+
+model4glm <- glm(vill$VD01_comm ~ vill$AC_type_noST * PropSC_vill +
+                   as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
+
+##Try to cluster errors by AC, district, and state
+#SEs clustered at state level. Remove # to check clustered at other levels
+#cluster<-"VD01_uniqueAC"
+#vill$VD01_district_unique<-paste(vill$VD01_state_id, "-", vill$VD01_district_id, sep="")
+#cluster<-"VD01_district_unique"
+
+# Calculating standard errors clustered at the state level 
+
+cluster <- "VD01_state_id"
+
+model1glm$se <- clusterSE(model1glm, data = vill, cluster = cluster)
+model2glm$se <- clusterSE(model2glm, data = vill, cluster = cluster)
+model3glm$se <- clusterSE(model3glm, data = vill, cluster = cluster)
+model4glm$se <- clusterSE(model4glm, data = vill, cluster = cluster)
+
+# Outputting results into apsr table 
+
+library(apsrtable)
+table_logit <- apsrtable(model1glm, model2glm, model3glm, model4glm, se = "both", 
+                         stars = 1, omitcoef = c(4:19), 
+                         coef.names = c("Intercept", "SC reserved", "Proportion SC", 
+                                        "SC reserved * Proportion SC"))
+
+# Printing table 
+
+##Table 5
+table_logit
+
 ```
 
 # References
