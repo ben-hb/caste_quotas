@@ -476,28 +476,7 @@ balanceTable2(covariates, bal.out_norep1, bal.out_norep2)
 
 ```{r figure_3}
 
-
 detach(matchdta)
-
-##Balance on SC percentage
-
-# Checks for balance in matching across original dataset and the matched
-# datasets from both iterations of the above loop
-
-t.test(devDTA$SC_percent71_true ~ devDTA$AC_type_noST)
-t.test(matched1$SC_percent71_true ~ matched1$AC_type_noST)
-t.test(matched2$SC_percent71_true ~ matched2$AC_type_noST)
-
-###Figure showing balance on percentage SC
-
-#Commented out, as the pdf is not included in the replication files
-
-#pdf("Figures/Fig_SC_percent71_balance_AEJ.pdf", width=7, height=3)
-
-# Setts the dimensions for the forthcoming figures
-
-par(mai = c(0.8, 0.3, 0.3, 0.1))
-par(mfrow = c(1,3))
 
 # Plots the distribution of the percentage of Scheduled Caste members in the
 # constituency for both the General and Reserved Constituencies. The first plot
@@ -511,44 +490,87 @@ par(mfrow = c(1,3))
 # tolerance for matching, which now shows nearly identical distributions, though
 # with a tiny right skew still remaining for Reserved Constituencies.
 
+# Preparing to artificially generate legends, as the data is not sufficiently
+# tidy to use aesthetic mappings
+
+colors <- c("Reserved" = "red", "General" = "blue")
+
 # First Plot: Before Matching
 
-plot(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "SC" & 
-                                        complete.cases(devDTA$AC_type_noST)]), 
-     col = "#FF1493", xlim = c(0,60), ylim = c(0, 0.1), main = "Before matching", 
-     xlab = "Percentage of SCs in constituency", las = 1)
-lines(density(devDTA$SC_percent71_true[devDTA$AC_type_noST == "GEN" & 
-                                         complete.cases(devDTA$AC_type_noST)]), 
-      col = "#00688B", lty = 2)
-legend("topright", c(paste("General (N=", summary(devDTA$AC_type_noST)[1], ")", sep = ""), 
-                     paste("Reserved (N=", summary(devDTA$AC_type_noST)[2], ")", sep = "")), 
-       lty = c(2,1), col = c("#00688B", "#FF1493"))
+ggplot() + 
+  geom_density(aes(x = devDTA$SC_percent71_true[devDTA$AC_type_noST == "SC" & 
+                                                  complete.cases(devDTA$AC_type_noST)], 
+                   color = "Reserved")) + 
+  geom_density(aes(x = devDTA$SC_percent71_true[devDTA$AC_type_noST == "GEN" & 
+                                         complete.cases(devDTA$AC_type_noST)],
+                   color = "General"), linetype = "dashed") +
+  scale_color_manual(values = colors,
+                     labels = c(paste0("General (N=" , summary(matched2$AC_type_noST)[1], ")"),
+                                paste0("Reserved (N=", summary(matched2$AC_type_noST)[2], ")"))) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.title = element_blank(), 
+        legend.background = element_rect(fill = "white", color = "black", size = .5, linetype = "solid"),
+        legend.justification = c(1, 0), legend.position = c(1, 0.8)) + 
+  labs(x = "Percentage of SCs in Constituency",
+       y = "",
+       title = "Before Matching") + 
+  scale_y_continuous(limits = c(0, 0.1),
+                     breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.1)) +
+  scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) 
+
 
 # Second Plot: After Matching
 
-plot(density(matched1$SC_percent71_true[matched1$AC_type_noST == "SC"]), col = "#FF1493", 
-     xlim = c(0,60), ylim = c(0, 0.1), main = "After matching", 
-     xlab = "Percentage of SCs in constituency", las = 1)
-lines(density(matched1$SC_percent71_true[matched1$AC_type_noST == "GEN"]), col = "#00688B", 
-      lty = 2)
-legend("topright", c(paste("General (N=", summary(matched1$AC_type_noST)[1], ")", sep = ""), 
-                     paste("Reserved (N=", summary(matched1$AC_type_noST)[2], ")", sep = "")), 
-       lty = c(2,1), col = c("#00688B", "#FF1493"))
+ggplot() + 
+  geom_density(aes(x = matched1$SC_percent71_true[matched1$AC_type_noST == "SC"], 
+                   color = "Reserved")) + 
+  geom_density(aes(x = matched1$SC_percent71_true[matched1$AC_type_noST == "GEN"],
+                   color = "General"), 
+               linetype = "dashed") +
+  scale_color_manual(values = colors,
+                   labels = c(paste0("General (N=" , summary(matched2$AC_type_noST)[1], ")"),
+                              paste0("Reserved (N=", summary(matched2$AC_type_noST)[2], ")"))) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.title = element_blank(), 
+        legend.background = element_rect(fill = "white", color = "black", size = .5, linetype = "solid"),
+        legend.justification = c(1, 0), legend.position = c(1, 0.8)) + 
+  labs(x = "Percentage of SCs in Constituency",
+       y = "",
+       title = "After Matching") + 
+  scale_y_continuous(limits = c(0, 0.1),
+                     breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.1)) +
+  scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) 
 
 # Third Plot: After Matching with Caliper
 
-plot(density(matched2$SC_percent71_true[matched2$AC_type_noST == "SC"]), col = "#FF1493", 
-    xlim = c(0,60), ylim = c(0, 0.1), main = "After matching with caliper", 
-    xlab = "Percentage of SCs in constituency", las = 1)
-lines(density(matched2$SC_percent71_true[matched2$AC_type_noST == "GEN"]), col = "#00688B", 
-      lty = 2)
-legend("topright", c(paste("General (N=", summary(matched2$AC_type_noST)[1], ")", sep = ""), 
-                     paste("Reserved (N=", summary(matched2$AC_type_noST)[2], ")", sep = "")), 
-       lty = c(2,1), col = c("#00688B", "#FF1493"))
-
-# Ends plotting session and clears figure parameters set by par()
-
-dev.off()
+ggplot() + 
+  geom_density(aes(x = matched2$SC_percent71_true[matched2$AC_type_noST == "SC"],
+                   color = "Reserved")) + 
+  geom_density(aes(x = matched2$SC_percent71_true[matched2$AC_type_noST == "GEN"],
+                   color = "General"), 
+               linetype = "dashed") +
+  scale_color_manual(values = colors,
+                   labels = c(paste0("General (N=" , summary(matched2$AC_type_noST)[1], ")"),
+                              paste0("Reserved (N=", summary(matched2$AC_type_noST)[2], ")"))) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.title = element_blank(), 
+        legend.background = element_rect(fill = "white", color = "black", size = .5, linetype = "solid"),
+        legend.justification = c(1, 0), legend.position = c(1, 0.8)) + 
+  labs(x = "Percentage of SCs in Constituency",
+       y = "",
+       title = "After Matching with Caliper") + 
+  scale_y_continuous(limits = c(0, 0.1),
+                     breaks = c(0, 0.02, 0.04, 0.06, 0.08, 0.1)) +
+  scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) 
 
 ```
 
