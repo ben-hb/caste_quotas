@@ -2,6 +2,8 @@
 title: "Development without Representation: Replication"
 author: "Benjamin Hoffner-Brodsky"
 date: "5/15/2020"
+header-includes:
+  - \usepackage{dcolumn}
 bibliography: bibliography.bib
 output: bookdown::pdf_document2
 link_citations: TRUE
@@ -19,6 +21,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 library(tidyverse)
 library(sandwich)
+library(apsrtable)
 library(lmtest)
 library(xtable)
 
@@ -705,47 +708,70 @@ print(articlematrix_output)
 
 ```
 
-```{r figure_4}
+```{r figure_4_setup, include = FALSE}
 
-# Setting margins for the forthcoming figure
+# Tidying data to convert estimate type into a variable to aid in ggplot legend
+# design
 
-par(mar = c(4, 12, 1, .5))
+figurematrix_matching <- figurematrix[, 1:4] %>% 
+  cbind(type = "matching",
+        coefficient = rownames(figurematrix))
 
-# Plotting coefficient differences for the matching estimate and bias-adjusted
-# estimate
+figurematrix_bias <- figurematrix[, 5:8] %>% 
+  cbind(type = "bias",
+        coefficient = rownames(figurematrix))
 
-plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
-     xlab = "Difference in percentage points in 2001 (SC-GEN)", ylab = "", cex.main = 2)
-
-abline(v = 0, lty = 3)
-axis(side = 1,tick = TRUE, las = 1, cex.axis = 1)
-axis(side = 2,at = c(14:1), labels = row.names(figurematrix), cex.axis = 1, las = 1, tick = F)
-
-# This demonstrates the change in coefficients between the matching estimate and
-# bias-adjusted estimate in some form, however I'm having trouble getting it to
-# output
-
-for (i in 1:nrow(figurematrix)) {
-arrows(x0 = as.numeric(figurematrix[i, 2]), x1 = as.numeric(figurematrix[i, 3]), 
-       y0 = (15 - i + .1), y1 = (15 - i + .1), angle = 90, length = .025, code = 3)
-
-arrows(x0 = as.numeric(figurematrix[i, 6]), x1 = as.numeric(figurematrix[i, 7]), 
-       y0 = (15 - i - .1), y1 = (15 - i - .1), angle = 90, length = .025, code = 3)
-
-points(x = as.numeric(figurematrix[i, 1]), y = 15 - i + .1, pch = 19, cex = .7)
-
-points(x = as.numeric(figurematrix[i, 5]), y = 15 - i - .1, pch = 1, cex = .7, col = "gray40")
-text(x = 95, y = i, figurematrix[i, 4], cex = .8)
-
-}
-legend(x = 2.2, y = 4, pch = c(19, 1, NA), lty = c(NA, NA, 1), 
-       legend = c("Matching est.", "Bias-adjusted est.", "95% conf. interval"), 
-       cex = .9, bg = "white", merge = T)
-dev.off()
+figuredf <- figurematrix_matching %>% 
+  rbind(figurematrix_bias) %>% 
+  data.frame() %>% 
+  
+# Reordering factor to match Jensenius' y-axis order
+  
+  mutate(Difference = as.numeric(as.character(Difference)),
+         Conf.int.min = as.numeric(as.character(Conf.int.min)),
+         Conf.int.max = as.numeric(as.character(Conf.int.max)),
+         coefficient = factor(coefficient, levels = c(
+           "Literacy rate ", "Employment rate ", "Agricultural laborers", 
+           "Electricity in village", "School in village ", "Medical facility in village",
+           "Comm. channel in village", "Literacy gap", "Employment gap", "Agricultural laborers gap",
+           "Electricity in village gap", "School in village gap", "Medical facility in village gap",
+           "Comm. channel in village gap"
+         )))
 
 ```
 
-```{r table_4}
+```{r figure_4}
+
+ggplot(figuredf, aes(x = coefficient, y = Difference)) + 
+  geom_errorbar(aes(ymax = Conf.int.min, ymin = Conf.int.max, group = type),
+                  position = position_dodge(width = 0.7)) +
+  geom_point(aes(shape = type),
+             position = position_dodge(width = 0.7)) +
+  scale_shape_manual(values = c("matching" = 19, "bias" = 17), 
+                   labels = c("matching" = "Matching est.", "bias" = "Bias-adjusted est.")) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  
+# I'm opting to narrow the scale on the x-axis in order to provide more detail,
+# as the absolute value of no coefficient exceeds 3
+  
+  scale_y_continuous(limits = c(-3, 5),
+                     breaks = c(-3, -2, -1, 0, 1, 2, 3)) +
+  scale_x_discrete(limits = rev(levels(figuredf$coefficient))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.title = element_blank(), 
+        legend.background = element_rect(fill = "white", color = "black", size = .5, linetype = "solid"),
+        legend.justification = c(1, 0), legend.position = c(1.15, 0.2),
+        plot.margin = margin(10, 50, 10, 10)) +
+  coord_flip() + 
+  labs(
+    y = "Difference in percentage points in 2001 (SC-GEN)",
+    x = ""
+  )
+
+```
+
+```{r table_4_setup, include = FALSE}
 
 # Outputting variables from matched2 into their own vectors for clearer
 # interpretation in the forthcoming regressions
@@ -800,15 +826,6 @@ model7lm <- lm(matched2$P_al_SC ~ matched2$AC_type_noST * PropSC)
 
 model9lm <- lm(matched2$P_al_SC ~ agr_lag + matched2$AC_type_noST * PropSC + stateFE)
 
-# Outputting regression results for internal check - vestigial
-
-summary(model1lm)
-summary(model3lm)
-summary(model4lm)
-summary(model6lm)
-summary(model7lm)
-summary(model9lm)
-
 # Estimating standardized errors clustered at the state level
 
 model1lm$se <- clusterSE(model1lm, data = matched2, cluster = "State_no_2001_old")
@@ -820,20 +837,21 @@ model9lm$se <- clusterSE(model9lm, data = matched2, cluster = "State_no_2001_old
 
 # Outputting results into apsr table 
 
-library(apsrtable)
 table_OLS <- apsrtable(model1lm, model3lm, model4lm, model6lm, model7lm, model9lm, 
                        se = "robust", omitcoef = c(6:19),  
                        coef.names = c("Intercept", "SC reserved", "Percentage SC", 
                                       "SC reserved * Percentage SC", "Literacy SC in 1971", 
                                       "Worker SC in 1971", "Agr. laborer SC in 1971"))
 
-# Printing table 
-
-#Table 4
-table_OLS
 ```
 
-```{r table_5}
+```{r table_4, results = "asis"}
+
+table_OLS
+
+```
+
+```{r table_5_setup, include = FALSE}
 
 
 # This section explores the possibility that there is no visible effect on net
@@ -844,31 +862,15 @@ table_OLS
 # communication channel, using an interaction model effect with type of
 # constituency and proportion of Scheduled Caste individuals
 
-#load full village dataset
 load("replication_files/Vill_AC.RData")
 
-# Checking data - vestigial 
-
-dim(vill_con) 
-names(vill_con)
-
 vill_con$VD01_state_id <- as.numeric(as.character(vill_con$VD01_state_id))
-summary(vill_con$VD01_state_id)
-summary(vill_con$VD01_AC_id)
-summary(matched2$State_number_2001)
-summary(matched2$AC_no_2001)
 
 # Only using villages that correspond to Assembly Constituencies from the quota
 # dataset
 
-##reducde to ACs that are in matched2
 vill <- merge(vill_con, matched2[, c(1:2, 28)], by.x = c("VD01_state_id", "VD01_AC_id"), 
               by.y = c("State_number_2001", "AC_no_2001"))
-
-# Vestigial check 
-
-names(vill)
-dim(vill)
 
 # Preparing variables for regression
 
@@ -898,12 +900,6 @@ model3glm <- glm(vill$VD01_medic ~ vill$AC_type_noST * PropSC_vill +
 model4glm <- glm(vill$VD01_comm ~ vill$AC_type_noST * PropSC_vill +
                    as.factor(vill$VD01_state_id), family = binomial(link = "logit"))
 
-##Try to cluster errors by AC, district, and state
-#SEs clustered at state level. Remove # to check clustered at other levels
-#cluster<-"VD01_uniqueAC"
-#vill$VD01_district_unique<-paste(vill$VD01_state_id, "-", vill$VD01_district_id, sep="")
-#cluster<-"VD01_district_unique"
-
 # Calculating standard errors clustered at the state level 
 
 cluster <- "VD01_state_id"
@@ -915,16 +911,19 @@ model4glm$se <- clusterSE(model4glm, data = vill, cluster = cluster)
 
 # Outputting results into apsr table 
 
-library(apsrtable)
 table_logit <- apsrtable(model1glm, model2glm, model3glm, model4glm, se = "both", 
                          stars = 1, omitcoef = c(4:19), 
                          coef.names = c("Intercept", "SC reserved", "Proportion SC", 
                                         "SC reserved * Proportion SC"))
+```
 
-# Printing table 
+```{r table_5, results = "asis"}
 
-##Table 5
 table_logit
+
+```
+
+```{r extension}
 
 ```
 
