@@ -8,11 +8,14 @@ link_citations: TRUE
 biblio-style: "apalike"
 ---
 
-```{r setup, include = FALSE}
+```{r table_1_setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
 # Note: where possible variable names are preserved from Jensenius' published
 # code to allow for easy methodological comparisons
+
+# Each replicated output has 2 code chunks: one setup chunk, with include set to
+# FALSE, and one output chunk, with include left to TRUE by default
 
 library(tidyverse)
 library(sandwich)
@@ -20,6 +23,10 @@ library(lmtest)
 library(xtable)
 
 rm(list = ls())
+
+# Globally stopping xtable() from outputting a package watermark
+
+options(xtable.comment = FALSE)
 
 load("replication_files/devDTA.Rdata")
 
@@ -574,13 +581,7 @@ ggplot() +
 
 ```
 
-```{r matching_estimates}
-
-
-##Calculating matching estimates for Table 3 and Figure 4
-
-##Remove # from lines with alternative SE specification to check robustness to
-##other SEs.
+```{r table_3_setup}
 
 # Generates a new matrix with row number equivalent to the number of outcome
 # variables of interest
@@ -600,8 +601,6 @@ matched2_smaller <- matched2[complete.cases(matched2[outcomeindex[i]], matched2$
 # Regresses outcome variable of interest on type of constituency
 
 mymodel <- lm(matched1_smaller[, outcomeindex[i]] ~ matched1_smaller$AC_type_noST)
-
-#SEs clustered at state level
 
 # Runs clusterSE() from earlier to calculate clustered standard errors
 
@@ -623,16 +622,10 @@ mymatrix[i, 3] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[
 mymatrix[i, 4] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                          round(coeftest(mymodel, mySE)[2, 4], 2))
 
-# Naive SEs from OLS
-#mymatrix[i,c(2:3)]<-round(confint(mymodel)[2,],2)
+# Repeating with caliper matching 
 
-#mymatrix[i,4]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
-#round(coef(summary.lm(mymodel))[2,4],2))
-
-#And now with caliper
 mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST)
 
-#SEs clustered at state level
 mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
 # Outputs difference coefficient for caliper matches to the third column to
@@ -651,18 +644,13 @@ mymatrix[i, 7] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)[
 mymatrix[i,8] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                         round(coeftest(mymodel, mySE)[2, 4], 2))
 
-# Naive SEs from OLS
-#mymatrix[i,c(6:7)]<-round(confint(mymodel)[2,],2)
-
-#mymatrix[i,8]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
-#round(coef(summary.lm(mymodel))[2,4],2))
-
-#And now with bias adjust
+# Adding in bias adjustment
 
 SCpop <- matched2_smaller$SC_pop71_true
 mymodel <- lm(matched2_smaller[, outcomeindex[i]] ~ matched2_smaller$AC_type_noST + SCpop)
 
-#SEs clustered at state level
+# Clusters SEs at state level 
+
 mySE <- clusterSE(mymodel, data = matched2_smaller, cluster = "State_no_2001_old")
 
 # Outputs difference coefficient for bias-adjusted matches to the fifth column
@@ -680,10 +668,6 @@ mymatrix[i, 11] <- round(mymodel$coef[2] - qnorm(.975) * coeftest(mymodel, mySE)
 
 mymatrix[i, 12] <- ifelse(coeftest(mymodel, mySE)[2, 4] < 0.01, "<0.01", 
                           round(coeftest(mymodel, mySE)[2, 4], 2))
-
-#Naive SEs from OLS mymatrix[i,c(10:11)]<-round(confint(mymodel)[2,],2)
-#mymatrix[i,12]<-ifelse(coef(summary.lm(mymodel))[2,4]<0.01, "<0.01",
-#round(coef(summary.lm(mymodel))[2,4],2))
 
 # regression for loop ends
 
@@ -711,14 +695,19 @@ figurematrix <- mymatrix[-1, -c(1:4)]
 
 articlematrix <- mymatrix[-1, c(1, 4, NA, 5, 8, NA, 9, 12)]
 
-# This looks to be third time xtable is loaded in
+articlematrix_output <- xtable(articlematrix)
 
-library(xtable)
-xtable(articlematrix)
+```
+
+```{r table_3, results = "asis"}
+
+print(articlematrix_output)
+
+```
+
+```{r figure_4}
 
 # Setting margins for the forthcoming figure
-
-#pdf(file="Figures/Fig_matching_est.pdf", height=7, width =7)
 
 par(mar = c(4, 12, 1, .5))
 
@@ -727,16 +716,14 @@ par(mar = c(4, 12, 1, .5))
 
 plot(x = NULL,axes = F, xlim = c(-10, 10), ylim = c(1,14), 
      xlab = "Difference in percentage points in 2001 (SC-GEN)", ylab = "", cex.main = 2)
-# add the 0, vertical lines
 
 abline(v = 0, lty = 3)
 axis(side = 1,tick = TRUE, las = 1, cex.axis = 1)
 axis(side = 2,at = c(14:1), labels = row.names(figurematrix), cex.axis = 1, las = 1, tick = F)
-#Writing in variable names
 
-# This appears to demonstrate the change in coefficients between the matching
-# estimate and bias-adjusted estimate in some form, however I'm having trouble
-# getting it to output
+# This demonstrates the change in coefficients between the matching estimate and
+# bias-adjusted estimate in some form, however I'm having trouble getting it to
+# output
 
 for (i in 1:nrow(figurematrix)) {
 arrows(x0 = as.numeric(figurematrix[i, 2]), x1 = as.numeric(figurematrix[i, 3]), 
@@ -755,7 +742,6 @@ legend(x = 2.2, y = 4, pch = c(19, 1, NA), lty = c(NA, NA, 1),
        legend = c("Matching est.", "Bias-adjusted est.", "95% conf. interval"), 
        cex = .9, bg = "white", merge = T)
 dev.off()
-
 
 ```
 
