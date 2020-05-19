@@ -11,27 +11,95 @@ header-includes:
   - \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
   - \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
   - \newcolumntype{P}[1]{>{\raggedright\tabularxbackslash}p{#1}}
-# bibliography: bibliography.bib
+bibliography: bibliography.bib
 output: bookdown::pdf_document2
-# link_citations: TRUE
-# biblio-style: "apalike"
+abstract: "Jensenius (2015) demonstrates that, between 1971 and 2001, Indian assembly constituencies legally mandated to elect candidates belonging to a Scheduled Caste did not exhibit significantly different development indicators compared with general constituencies. I successfully replicated Jensenius’ results. I propose four alternate models for matching Scheduled Caste (SC) constituencies with general constituencies using a multivariate matching algorithm to mitigate selection bias attributed to treatment assignment and selection bias occurring from unmatched treatment cases. Under two of the four alternate models, I find at least one development indicator with a significant difference across SC and general constituencies. While Jensenius’ hypothesis is largely intact, the variance in results dependent on the selection of model illustrates the need for researchers to optimize and justify choices of matching model parameters and mechanisms." 
+link_citations: TRUE
+biblio-style: "apalike"
 ---
 
+\pagebreak
 
+## Introduction
 
-# Overview 
+  Since 1950, the Indian Parliament and India's state assemblies have guaranteed a minimum number of seats to Scheduled Castes (SCs). Ensuring ascriptive representation for the 16% of Indian citizens who belong to SCs was intended, in part, as a means to equitably allocate resources along caste lines @jensenius2015development. To implement SC quotas, the Government of India (GoI) non-randomly selected constituencies in which only SC members can run for office, though all members of the constituency are allowed to vote. As mandated in the Delimitation Act of 1972, the quotas were generally assigned to the constituency with the largest proportion of SCs in an eligible district and prevented multiple contiguous constituencies from receiving quotas. 
 
-This project is a replication for GOV 1006 at Harvard under Preceptor David Kane^[All analysis for this replication is available at [Development without Representation Replication Repo](https://github.com/ben-hb/development_without_representation_replication)].
+Jensenius forms pairs of reserved and non-reserved constituencies that fall within the same state, district, and parliamentary constituency. As there are 2,409 general constituencies and only 483 reserved constituencies in the dataset, Jensenius pairs treatment cases with the non-treatment case that is most similar in proportion of SCs, without replacement. In the first matching model, all pairs satisfying geographic requirements are preserved, while in the second model a caliper is applied, such that only pairs for which the difference between the proportion of SCs in the treatment and non-treatment case is less than or equal to 0.5 standard deviations. Jensenius uses a constituency-level dataset of 3,134 state assembly constituencies from the 15 largest Indian states with development data from 1971 and 2001. She finds a null constituency-level effect on overall development, redistribution to SCs, literacy rates, SC employment patterns, and village amenities. 
 
-All [data and replication materials](https://www.openicpsr.org/openicpsr/project/113613/version/V1/view) were kindly made public by [Francesca R. Jensenius](https://www.francesca.no), Professor of Political Science at the University of Oslo and Senior Research Fellow at the Norwegian Institute of International Affairs. 
+I successfully replicated Jensenius’ results and failed to reject the null hypothesis for a difference in the means of overall development, redistribution to SCs, literacy rates, SC employment patterns, and village amenities. I was able to replicate all tables and figures in @jensenius2015development without discrepancy. I accessed the replication materials from Jensenius’ personal website, which includes all data required for replication, a codebook for the dataset, and the R code necessary to replicate the majority of Jensenius’ results.^[All [data and replication materials](https://www.openicpsr.org/openicpsr/project/113613/version/V1/view) were kindly made public by [Francesca R. Jensenius](https://www.francesca.no), Professor of Political Science at the University of Oslo and Senior Research Fellow at the Norwegian Institute of International Affairs.] I used R for replication and analysis @R. 
 
-Since 1950, the Indian Parliament and India's state assemblies have guaranteed a minimum number of seats to Scheduled Castes (SCs). Ensuring ascriptive representation for the 16% of Indian citizens who belong to SCs was intended, in part, as a mechanism to equitably allocate resources along caste lines. To implement SC quotas, the federal government non-randomly selected constituencies in which only SC members can run for office, though all members of the constituency are allowed to vote. 
+I examine the robustness @leamer1983reporting of Jensenius’ results relative to the construct of the matching model by proposing two changes to the matching process. First, I match constituencies with replacement, allowing for multiple treatment cases to be paired to the same non-treatment case if doing so would decrease the difference in proportion SCs across the two constituencies. Matching with replacement makes pairs more similar across pre-treatment covariates, eliminates the significance of constituency ordering, and, critically, decreases the number of unmatched treatment cases. Leaving all other aspects of Jensenius’ analysis unchanged, allowing for replacement in the matching method decreases the number of unmatched treatment cases by 20% in the closest match model and by 6.9% in the caliper model. In two of the models matched with replacement, I find a difference in mean development indicators across the two groups that is significant at a 5% level. 
 
-The paper uses a dataset of constituency-level data of 3,134 state assembly constituencies from the 15 largest Indian states to compare development levels across reserved and non-reserved constituencies in 1971 and 2001. As reserved constituencies were non-randomly determined, Jensenius forms pairs of reserved and non-reserved constituencies, matching based on pre-selection characteristics to mitigate the effect of selection bias. She finds a null constituency-level effect on overall development, redistribution to SCs, literacy rates, SC employment patterns, and village amenities. 
+Second, I apply the recommendation coming out of @wang2013optimal 's Monte Carlo simulations to optimally select a caliper value of 1.62. In-line with the recommendation of @rosenbaum1985constructing a larger caliper value ameliorates the selection bias created by the systematic differences between cases which are able to be matched and those which are not. Holding all other parameters unchanged, increasing the caliper value from 0.5 to 1.62 decreases the number of unmatched treatment cases by 66% while increasing the median p-values for the difference between matched groups, indicating that the matched groups were also statistically more similar. 
 
-Development from Representation appeared in the *American Economic Journal: Applied Economics*,  vol 7, no. 3 pp. 196–220. 
+## Literature Review
 
-# Beautiful Graphic
+  SCs have faced ritual discrimination and social exclusion in South Asia since well before the existence of India as a nation @galanter1984competing. Traditionally viewed as ‘untouchable’, SCs occupy the lowest rung on India’s social leader and have been systematically excluded from positions of power and social influence through the caste system @thorat2012has. Following India’s independence from Great Britain in 1947, the founding members of the GoI wrote SC protections into India’s constitution. SC electoral quotas followed many years of debate and negotiation about the appropriate mechanism to grant constitutional rights to representation to SC communities while attempting to bridge, rather than polarize, the divide. 
+
+The resulting quota system implemented through the Delimitation Act of 1972 signified a compromise, in which electoral slots were reserved for SC members while still necessitating that SC politicians be elected by non-SC members in their constituency. Dr. Bhim Rao Ambedkar, the renowned SC leader and quota lobbyist, notoriously viewed the Delimitation Act of 1972 as a failure. He has commented that “the result is that the legislator of the minority elected to the reserved seat instead of being a champion of the minority is really a slave of the majority” @jensenius2017social.
+
+Other researchers have probed the effects of other forms of SC quotas. @dunning2013ethnic analyzed village-level SC electoral quotas and found no evidence of SC politicians reallocating resources to SC individuals in their constituency. @pande2003can explored the state assembly quotas and found no changes in spending habits at a state level using a regression discontinuity design. Yet no other researchers prior to or after Jensenius have delved into the effects of state assembly quotas on constituency-level development indicators or resource allocation.
+
+## Replication
+
+  @jensenius2015development stands alone both in its treatment of the constituency-level effects of state assembly quotas and its application of multivariate pre-treatment covariate matching to estimate the average treatment effect on the treated (ATT). To best mitigate treatment selection bias, Jensenius matches treated and non-treated cases only on the pre-treatment variables that government officials in 1972 would have considered. After matching cases, she then clusters standard errors for the difference in development indicator means at the state, district, and parliamentary constituency levels. Under all three calculations, she fails to find a significant difference at the 5% level in development indicators across the treated and untreated groups, indicating a null ATT. 
+
+To operationalize the metric of development, Jensenius considers individual-level indicators with readily available data that a motivated politician could reasonably impact. Consequently, she focuses on literacy rates, employment, and agricultural labor. 
+
+Jensenius also considers village-level development indicators, taking advantage of the overlap between assembly constituencies and villages. To measure village development, she evaluates the availability of electricity, schools, medical facilities, and communication channels in villages, with increases corresponding to a higher level of village development. In all of these indicators, Jensenius finds no significant ATT. 
+
+## Extension
+
+  @leamer1983reporting caution that the flexibility economics researchers have in selecting econometric models, combined with the tendency of economics journals to select for certain categories of outcomes, can result in an equilibrium in which an apparently robust result should be expected to be a result of model selection rather than underlying statistical truth. They recommend that “researchers be given the task of identifying interesting families of alternative models and be expected to summarize the range of inferences which are implied by each of the families”. It is in the spirit of expanding the families of alternative models that I propose two alterations to @jensenius2015development ’s, the combinations of which result in four alternate models to consider. Results from these alternate models consistent with Jensenius’ results would render her conclusions more robust to small changes in econometric model choices, while divergent results would necessitate further exploration to determine the most appropriate choice of models. 
+
+The first modification I propose to @jensenius2015development ’s matching methodology is matching with replacement. Three advantages of matching with replacement over matching without replacement motivate this amendment. 
+
+First, sampling without order is sensitive to changes in the order of both treated and non-treated cases. When sampling without replacement, there may be multiple non-treated cases that could be assigned to the same treated case. In @Matching , the R package Jensenius uses for creating pairs and assessing covariate balance, the potential for multiple non-treatment units to be assigned to the same treatment unit is handled by pairing whichever non-treatment unit is ordinally first. Given that there is no ‘correct’ ordering of observations, and that differences in order will correspond to differences in regression coefficients and significance tests, matching without replacement renders the analysis vulnerable both to randomness and to @leamer1983reporting ’s concerns regarding researcher discretion. Sampling with replacement comprehensively resolves this issue. When sampling with replacement, multiple non-treatment units can be assigned to the same treatment unit, negating the role of order on groupings, minimizing variance, and avoiding researcher selection bias. 
+
+Second, matching with replacement results in closer matches on inexact pretreatment covariates. Under sampling without replacement, a non-treatment unit may be assigned to the 2nd, 3rd, or 4th closest treatment unit, rather than the 1st closest, because the closest was already paired. Smaller differences in pretreatment covariates means that treated and non-treated units become more directly comparable and the effect of selection bias is minimized. 
+
+Third, matching with replacement decreases the number of unmatched units. When matching without replacement, there will be some units that have an appropriate match in the dataset but are dropped because the only appropriate match/es were already paired. Under matching with replacement, those same units need not be dropped. Dropped units have an outsized negative effect on bias because they are excluded as a function of pre-treatment covariate values. As @rosenbaum1985constructing states: “Discarding treated [cases] in this way can lead to serious biases, since the unmatched treated [cases] differ systematically from the matched treated children”. Holding all else constant, matching with replacement decreases the number of unmatched treatment cases by 20% in the closest match model and by 6.9% in the caliper model.
+
+Matching without replacement is not without drawbacks. Principally, replacing units decreases the effective sample size (ESS) because fewer observations are responsible for explaining a large proportion of the data. Yet this limitation is mitigated by the strict regional matching, with prevents a small number of units from being matched with too large a proportion of the data. 
+
+The second modification I propose is the modification of the caliper value used as the maximum standardized distance in proportion of SCs between matched units. @jensenius2015development employs a 0.5 standard deviation caliper, a critical parameter choice which is not justified in the paper. There is no obviously correct choice of caliper values, as a larger caliper value preserves a large proportion of cases, while a smaller caliper value results in treatment and control groups with more similar pre-treatment covariates, both of which are desirable elements to minimize bias. 
+
+To assess the tradeoff, I apply Wang et al. (2013)’s methodology to select a caliper value of 1.62 standard deviations. The increased caliper value decreases the number of unmatched treatment cases by 66% while increasing the median p-values for the difference between matched groups, indicating that the matched groups were statistically more similar, likely because of the decrease in dropped units and corresponding increase in ESS. 
+
+Table 1 shows the number of dropped unmatched units under each matching model. A larger number indicates a greater danger of selection bias, as units are systematically dropped based on pre-treatment covariates. Predictably, matching with replacement and without a caliper yields the lowest number of dropped units, 28. The most severe results comes from Jensenius (2015)’s model of matching without replacement and with a 0.5 standard deviation caliper which drops 159 units, or 32.9% of all treated units. Though insufficient evidence to be conclusive, the lower number of dropped units under the proposed alternate models could indicate an appropriate fit. 
+
+Insert Table 1
+
+Joining my proposed alterations with @jensenius2015development ’s models results in two parameter options for matching, each with three choices, for a total of six possible combinations of replacement and caliper. Matching can either be done with or without replacement and a caliper can be 0.5, 1.62, or not applied. 
+
+For easier reading, the six different models have been assigned the following numbering: 
+
+Model 1: Matching without replacement | No caliper 
+Model 2: Matching with replacement | No caliper 
+Model 3: Matching without replacement | 0.5 caliper 
+Model 4: Matching with replacement | 0.5 caliper 
+Model 5: Matching without replacement | 1.62 caliper 
+Model 6: Matching with replacement | 1.62 caliper
+
+Table 2 shows the resulting covariate balance across treated and non-treated groups for each of the six matching models, compared against the pre-matching balance. For each model, two significance tests are displayed: a paired t-test and a bootstrapped Kolmogorov-Smirnov (KS) test—the same tests used by @jensenius2015development —both of which test the hypothesis that the two groups have different means. For all six models, both significance tests, and all eight covariates, there is no evidence of a significant difference between means. For some models, however, this conclusion is more robust than others. Model 2—matching with replacement and no caliper—reports the highest aggregate mean and median of t-test p-values, while Model 5—matching without replacement and a 1.62 standard deviation caliper—reports the highest aggregate of KS p-values. A higher p-value is one indication of a more statistically robust match along pre-treatment covariates. 
+
+Insert Table 2 with appropriate labeling
+
+Having verified that the covariate balance was successful, I turn to comparing the regression results. Tables 3 and 4 show the results of regressing each outcome variable of interest on treatment status after matching. For each covariate, both the direct difference and the difference in difference effect, denoted by the term “gap” is shown. These tables mirror Figure 3 from @jensenius2015development, reproduced in the appendix, to allow for an easy comparison. Most noticeably, unlike in Models 1 and 3, under which Jensenius finds no differences significant at a 5% level, here Model 4 has a 0.05 p-value for the difference coefficient of literacy rate and Model 2 has a 0.05 p-value for the difference coefficient of having a medical facility in a village. Though both of these point towards a non-null ATT, contrary to @jensenius2015development ’s findings, the results should be considered with skepticism. Both barely cross the arbitrary 0.05 threshold and, given the sharp uptick in the number of regressions due to tripling the number of models being considered, it wouldn’t be surprising to find seemingly significant effects even if the ATT is null. These results should be interpreted as opening the possibility that alternate models could yield a non-null ATT, rather than independently establishing a non-null ATT. 
+
+## Conclusion
+
+  The GoI’s non-random assignment of constituencies mandated to have SC state assembly representatives complicates the process of assessing the causal effect of SC quotas on constituency-level development indicators. Since the Delimitation Act of 1972 required reserved constituencies to be geographically spread out and located in constituencies with high proportions of SCs, @jensenius2015development augments the value of this observational data by matching treated and non-treated cases on geographic location and proportion of  SCs. 
+
+To address the asymmetry in the number of general and reserved constituencies, Jensenius pairs treatment cases with non-treatment cases without replacement. In her first model, all pairs satisfying geographic requirements are preserved, while in her second model, a maximum distance caliper is applied, such that only pairs which are a maximum of 0.5 standard deviations of proportion of SCs apart from each other are preserved. Under both models, Jensenius fails to reject the null hypothesis that there was no constituency-level ATT on overall development, redistribution to SCs, literacy rates, SC employment patterns, or village amenities. 
+
+I successfully replicated Jensenius’ results and failed to reject the null hypothesis using both of her models. I then proposed two changes to the matching model, resulting in four new models to assess. First, I match constituencies with replacement, so that multiple treatment cases can be paired with the same non-treatment case. Leaving all else constant, I find that matching with replacement lowers the count of unmatched treatment cases by 20% in the closest match model and by 6.9% in the caliper model. I also find a statistically significant ATT under two models at the 5% level. 
+
+Second, I employ @wang2013optimal ’s advice to optimally select a caliper value of 1.62. Holding all else constant, widening the caliper from 0.5 standard deviations to 1.62 standard deviations decreases the number of unmatched treatment cases by 66%.
+
+Among the proposed alternate models are evidence of modifications that could result in fewer unmatched cases, better covariate balanced groups, and potentially statistically significant treatment effects. Thus, further research into the optimal choice of matching algorithm is needed. 
+
+## Appendix 
 
 ```{r table_1_setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -51,7 +119,7 @@ library(Matching)
 
 # Globally stopping xtable() from outputting a package watermark
 
-# options(xtable.comment = FALSE)
+options(xtable.comment = FALSE)
 
 set.seed(1)
 
@@ -752,7 +820,7 @@ sd_untreated <- sds[[1, 2]]
 
 sd <- ((sd_treated^2 + sd_untreated^2) / 2) ^ 0.5
 
-optimal_caliper <- 0.2 * sd 
+optimal_caliper <- 0.2 * sd
 
 # Matching using optimal caliper, without replacement 
 
@@ -902,6 +970,8 @@ rownames(drops) <- c("No caliper", "0.5 caliper", "0.2 * sd caliper")
 
 names(drops) <- c("Without Replacement", "With Replacement")
 
+drops_output <- xtable(drops, digits = 0, caption = "Number of Dropped Treatment Cases")
+
 ```
 
 ```{r extension_table_5_setup, include = FALSE}
@@ -992,7 +1062,8 @@ balanceTable6 <- function(covariates, bal.out_norep1,
       round(mean(ks_ps_rep_sub[, 1]), 2), round(mean(ks_ps_rep_sub[, 2]), 2),
       round(mean(ks_ps_norep_caliper[, 1]), 2), round(mean(ks_ps_norep_caliper[, 2]), 2),
       round(mean(ks_ps_rep_caliper[, 1]), 2), round(mean(ks_ps_rep_caliper[, 2]), 2), sep = "&")
-  cat("& Median", round(median(ks_ps_before[, 1]), 2), round(median(ks_ps_before[, 2]), 2), 
+  cat("\\", "\\", "\n", sep = "")
+  cat("Median", round(median(ks_ps_before[, 1]), 2), round(median(ks_ps_before[, 2]), 2), 
       round(median(ks_ps_norep1[, 1]), 2), round(median(ks_ps_norep1[, 2]), 2),
       round(median(ks_ps_rep[, 1]), 2), round(median(ks_ps_rep[, 2]), 2),
       round(median(ks_ps_norep2[, 1]), 2), round(median(ks_ps_norep2[, 2]), 2),
@@ -1272,12 +1343,7 @@ balanceTable2(covariates, bal.out_rep, bal.out_rep_caliper)
 
 ```{r extension_table_4, results = "asis"}
 
-# xtable(drops, digits = 0,
-       # caption = "Number of Dropped Treatment Cases")
-
-drops <- read_rds("drops.rds")
-
-print(xtable(drops, align = c("l", "|c", "|L{6cm}")), floating = T, include.rownames = T)
+drops_output
 
 ```
 
@@ -1521,4 +1587,4 @@ ggplot(figuredf, aes(x = coefficient, y = Difference)) +
 
 ```
 
-# References
+## References
