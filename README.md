@@ -1,7 +1,5 @@
 # Replication: Development from Representation? A Study of Quotas for Scheduled Castes in India
 
-This project is a replication for GOV 1006 at Harvard under Preceptor David Kane. 
-
 All [data and replication materials](https://www.openicpsr.org/openicpsr/project/113613/version/V1/view) were kindly made public by [Francesca R. Jensenius](https://www.francesca.no), Professor of Political Science at the University of Oslo and Senior Research Fellow at the Norwegian Institute of International Affairs. 
 
 Since 1950, the Indian Parliament and India's state assemblies have guaranteed a minimum number of seats to Scheduled Castes (SCs). Ensuring ascriptive representation for the 16% of Indian citizens who belong to SCs was intended, in part, as a mechanism to equitably allocate resources along caste lines. To implement SC quotas, the federal government non-randomly selected constituencies in which only SC members can run for office, though all members of the constituency are allowed to vote. 
